@@ -1,0 +1,58 @@
+.task-input-form {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease-default),
+              box-shadow var(--duration-fast) var(--ease-default);
+}
+
+.task-input-form:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-warm-glow);
+}
+
+.task-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.task-input::placeholder {
+  color: var(--text-muted);
+}
+
+.task-input-btn {
+  font-family: var(--font-helvetica);
+  font-size: var(--text-sm);
+  font-style: italic;
+  border: none;
+  background: var(--accent-warm);
+  color: var(--bg-deep);
+  padding: var(--space-2) var(--space-5);
+  margin: var(--space-1);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-smooth) var(--ease-default);
+}
+
+.task-input-btn:hover:not(:disabled) {
+  background: var(--accent-warm-hover);
+  box-shadow: var(--shadow-glow-warm);
+}
+
+.task-input-btn:active:not(:disabled) {
+  background: var(--accent-warm-dim);
+}
+
+.task-input-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
