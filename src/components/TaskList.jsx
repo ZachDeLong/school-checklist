@@ -2,7 +2,7 @@ import { AnimatePresence } from 'motion/react';
 import TaskItem from './TaskItem';
 import './TaskList.css';
 
-export default function TaskList({ tasks, onToggle, onDelete, onEdit }) {
+export default function TaskList({ tasks, onToggle }) {
   return (
     <div className="task-list">
       <AnimatePresence initial={false}>
@@ -11,8 +11,6 @@ export default function TaskList({ tasks, onToggle, onDelete, onEdit }) {
             key={task.id}
             task={task}
             onToggle={onToggle}
-            onDelete={onDelete}
-            onEdit={onEdit}
           />
         ))}
       </AnimatePresence>

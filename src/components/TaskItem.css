@@ -59,10 +59,13 @@
   stroke: var(--bg-deep);
 }
 
-.task-text-wrapper {
+.task-content {
   flex: 1;
+  min-width: 0;
+}
+
+.task-text-wrapper {
   position: relative;
-  cursor: pointer;
   user-select: none;
 }
 
@@ -128,6 +131,35 @@
 .task-delete:hover {
   color: var(--error);
   background: var(--bg-hover);
+}
+
+.task-meta {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.task-course {
+  color: var(--text-muted);
+}
+
+.task-due {
+  color: var(--text-secondary, #888);
+}
+
+.task-due.due-today {
+  color: var(--warning, #e6a23c);
+  font-weight: 500;
+}
+
+.task-due.due-soon {
+  color: var(--accent-warm, #d4a456);
+}
+
+.task-due.overdue {
+  color: var(--error, #e57373);
+  font-weight: 500;
 }
 
 @media (max-width: 480px) {

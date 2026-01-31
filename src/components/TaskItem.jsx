@@ -1,51 +1,47 @@
-import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { playCheckSound, playUncheckSound } from '../utils/sounds';
 import './TaskItem.css';
 
-export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState(task.text);
-  const inputRef = useRef(null);
+function formatDueDate(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editing]);
+  const isToday = date.toDateString() === now.toDateString();
+  const isTomorrow = date.toDateString() === tomorrow.toDateString();
+
+  if (isToday) return 'Today';
+  if (isTomorrow) return 'Tomorrow';
+
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function getDueStatus(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const now = new Date();
+  if (date < now) return 'overdue';
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (date.toDateString() === now.toDateString()) return 'due-today';
+  if (date.toDateString() === tomorrow.toDateString()) return 'due-soon';
+  return '';
+}
+
+export default function TaskItem({ task, onToggle }) {
+  const displayText = task.title || task.text;
+  const dueLabel = formatDueDate(task.dueDate);
+  const dueStatus = getDueStatus(task.dueDate);
 
   function handleToggle() {
-    if (editing) return;
     if (!task.completed) {
       playCheckSound();
     } else {
       playUncheckSound();
     }
     onToggle(task.id);
-  }
-
-  function handleTextClick() {
-    if (task.completed) return;
-    setEditText(task.text);
-    setEditing(true);
-  }
-
-  function handleSave() {
-    const trimmed = editText.trim();
-    if (trimmed && trimmed !== task.text) {
-      onEdit(task.id, trimmed);
-    }
-    setEditing(false);
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') {
-      handleSave();
-    } else if (e.key === 'Escape') {
-      setEditText(task.text);
-      setEditing(false);
-    }
   }
 
   return (
@@ -79,19 +75,10 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
         </svg>
       </button>
 
-      {editing ? (
-        <input
-          ref={inputRef}
-          className="task-edit-input"
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          onBlur={handleSave}
-          onKeyDown={handleKeyDown}
-        />
-      ) : (
-        <div className="task-text-wrapper" onClick={handleTextClick}>
+      <div className="task-content">
+        <div className="task-text-wrapper">
           <span className={`task-text ${task.completed ? 'completed' : ''}`}>
-            {task.text}
+            {displayText}
           </span>
           <motion.span
             className="strikethrough-line"
@@ -100,11 +87,15 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
             transition={{ duration: 0.2, delay: task.completed ? 0.05 : 0 }}
           />
         </div>
-      )}
-
-      <button className="task-delete" onClick={() => onDelete(task.id)} aria-label="Delete task">
-        &times;
-      </button>
+        <div className="task-meta">
+          {task.courseName && (
+            <span className="task-course">{task.courseName}</span>
+          )}
+          {dueLabel && (
+            <span className={`task-due ${dueStatus}`}>{dueLabel}</span>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 }

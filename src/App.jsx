@@ -1,48 +1,32 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
+import { useTaskStore } from './store/taskStore';
 import ProgressBar from './components/ProgressBar';
 import TaskInput from './components/TaskInput';
 import TaskList from './components/TaskList';
 import { playCelebrationSound } from './utils/sounds';
 
-function loadTasks() {
-  try {
-    const saved = localStorage.getItem('checklist-tasks');
-    return saved ? JSON.parse(saved) : [];
-  } catch {
-    return [];
-  }
-}
-
-function sortTasks(tasks) {
-  return [...tasks].sort((a, b) => a.completed - b.completed);
-}
-
 function App() {
-  const [tasks, setTasks] = useState(loadTasks);
-  const [displayOrder, setDisplayOrder] = useState(() => sortTasks(tasks).map((t) => t.id));
-  const nextId = useRef(
-    tasks.reduce((max, t) => {
-      const num = parseInt(t.id.replace('task-', ''), 10);
-      return num >= max ? num + 1 : max;
-    }, 0)
-  );
+  const { tasks, syncing, error, syncCanvas, toggleComplete, addManualTask } = useTaskStore();
   const prevAllDone = useRef(false);
-  const sortTimerRef = useRef(null);
 
+  // Sync Canvas on mount (force on first load)
   useEffect(() => {
-    localStorage.setItem('checklist-tasks', JSON.stringify(tasks));
-  }, [tasks]);
+    syncCanvas(true);
+  }, []);
 
   const totalCount = tasks.length;
   const completedCount = tasks.filter((t) => t.completed).length;
   const allDone = totalCount > 0 && completedCount === totalCount;
 
-  // Build the display list: tasks in displayOrder, with current data
-  const displayTasks = displayOrder
-    .map((id) => tasks.find((t) => t.id === id))
-    .filter(Boolean)
-    .concat(tasks.filter((t) => !displayOrder.includes(t.id)));
+  // Sort tasks: incomplete first, then by due date
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed - b.completed;
+    if (!a.dueDate && !b.dueDate) return 0;
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate) - new Date(b.dueDate);
+  });
 
   useEffect(() => {
     if (allDone && !prevAllDone.current) {
@@ -65,67 +49,20 @@ function App() {
     prevAllDone.current = allDone;
   }, [allDone]);
 
-  function addTask(text) {
-    const id = `task-${nextId.current++}`;
-    setTasks((prev) => [...prev, { id, text, completed: false }]);
-    setDisplayOrder((prev) => {
-      const firstCompletedIdx = prev.findIndex((oid) =>
-        tasks.find((t) => t.id === oid)?.completed
-      );
-      if (firstCompletedIdx === -1) return [...prev, id];
-      return [...prev.slice(0, firstCompletedIdx), id, ...prev.slice(firstCompletedIdx)];
-    });
-  }
-
-  function toggleTask(id) {
-    const task = tasks.find((t) => t.id === id);
-    const isCompleting = task && !task.completed;
-
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
-    );
-
-    if (isCompleting) {
-      // Delay the re-sort so the item stays in place while it fades
-      clearTimeout(sortTimerRef.current);
-      sortTimerRef.current = setTimeout(() => {
-        setDisplayOrder(
-          sortTasks(
-            tasks.map((t) => (t.id === id ? { ...t, completed: true } : t))
-          ).map((t) => t.id)
-        );
-      }, 800);
-    } else {
-      // Unchecking: re-sort immediately
-      setDisplayOrder(
-        sortTasks(
-          tasks.map((t) => (t.id === id ? { ...t, completed: false } : t))
-        ).map((t) => t.id)
-      );
-    }
-  }
-
-  function editTask(id, newText) {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, text: newText } : t))
-    );
-  }
-
-  function deleteTask(id) {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    setDisplayOrder((prev) => prev.filter((oid) => oid !== id));
+  function handleAddTask(text) {
+    addManualTask(text, null);
   }
 
   return (
     <div className="app">
       <h1 className="app-title">my checklist</h1>
+      {syncing && <div className="sync-status">Syncing with Canvas...</div>}
+      {error && <div className="sync-error">{error}</div>}
       <ProgressBar completedCount={completedCount} totalCount={totalCount} />
-      <TaskInput onAddTask={addTask} />
+      <TaskInput onAddTask={handleAddTask} />
       <TaskList
-        tasks={displayTasks}
-        onToggle={toggleTask}
-        onDelete={deleteTask}
-        onEdit={editTask}
+        tasks={sortedTasks}
+        onToggle={toggleComplete}
       />
     </div>
   );
