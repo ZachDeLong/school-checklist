@@ -1,6 +1,6 @@
-# School Checklist
+# Automated School Checklist
 
-A personal task manager that syncs with Canvas LMS to automatically pull in your upcoming assignments, quizzes, and discussions.
+A task manager that syncs with Canvas LMS to automatically pull in your upcoming assignments, quizzes, discussions, etc.
 
 ## Features
 
@@ -9,7 +9,6 @@ A personal task manager that syncs with Canvas LMS to automatically pull in your
 - Color-coded due dates (red = overdue, orange = today, amber = tomorrow)
 - Add manual tasks alongside Canvas assignments
 - Completion state persists across syncs
-- Confetti celebration when all tasks are done
 
 ## Setup
 
@@ -33,7 +32,7 @@ npm install
 3. Scroll down to **Approved Integrations**
 4. Click **+ New Access Token**
 5. Give it a name (e.g., "School Checklist") and click **Generate Token**
-6. Copy the token (you won't be able to see it again)
+6. Copy the token!
 
 ### 4. Configure your token
 
@@ -45,7 +44,7 @@ VITE_CANVAS_TOKEN=your_token_here
 
 ### 5. Configure your Canvas instance (if needed)
 
-The app is configured for `ivc.instructure.com` by default. If your school uses a different Canvas URL, update `vite.config.ts`:
+The app is configured for my school `ivc.instructure.com` by default. If your school uses a different Canvas URL, update `vite.config.ts`:
 
 ```ts
 proxy: {
@@ -67,8 +66,8 @@ Open http://localhost:5173 in your browser.
 ## Important Notes
 
 - **Development only**: The Canvas API proxy only works in development mode (`npm run dev`). For production deployment, you'd need a backend server to handle API requests.
-- **Token security**: Never commit your `.env.local` file. It's already in `.gitignore`.
-- **Rate limits**: Canvas has API rate limits. The app caches data and only re-syncs if data is older than 1 hour.
+- **Token security**: Never commit your `.env.local` file... obviously.
+- **Rate limits**: Canvas has API rate limits so the app caches data and only re-syncs if data is older than 1 hour.
 
 ## Tech Stack
 
