@@ -61,7 +61,7 @@ proxy: {
 npm run dev
 ```
 
-Open http://localhost:5173 in your browser.
+Open localhost in your browser.
 
 ## Important Notes
 
