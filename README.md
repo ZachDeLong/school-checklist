@@ -71,6 +71,7 @@ Open localhost in your browser.
 - **Development only**: The Canvas API proxy only works in development mode (`npm run dev`). For production deployment, you'd need a backend server to handle API requests.
 - **Token security**: Never commit your `.env` file... obviously.
 - **Rate limits**: Canvas has API rate limits so the app caches data and only re-syncs if data is older than 1 hour.
+- **Browser compatibility**: Works best in Chrome/Edge. If Canvas sync fails, check your browser console for CORS errors.
 
 ## Tech Stack
 
