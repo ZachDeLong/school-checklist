@@ -5,9 +5,12 @@ A task manager that syncs with Canvas LMS to automatically pull in your upcoming
 ## Features
 
 - Auto-syncs assignments from Canvas (today through 2 weeks out)
-- Shows course name and due date for each task
+- Manual sync button to force refresh
+- Filter tasks by source (All / Canvas / Personal) and search by title
+- Hide completed tasks toggle
+- Add manual tasks with optional due dates
+- Rename courses inline (click on course name)
 - Color-coded due dates (red = overdue, orange = today, amber = tomorrow)
-- Add manual tasks alongside Canvas assignments
 - Completion state persists across syncs
 
 ## Setup
@@ -36,7 +39,7 @@ npm install
 
 ### 4. Configure your token
 
-Create a `.env.local` file in the project root:
+Create a `.env` file in the project root:
 
 ```
 VITE_CANVAS_TOKEN=your_token_here
@@ -66,7 +69,7 @@ Open localhost in your browser.
 ## Important Notes
 
 - **Development only**: The Canvas API proxy only works in development mode (`npm run dev`). For production deployment, you'd need a backend server to handle API requests.
-- **Token security**: Never commit your `.env.local` file... obviously.
+- **Token security**: Never commit your `.env` file... obviously.
 - **Rate limits**: Canvas has API rate limits so the app caches data and only re-syncs if data is older than 1 hour.
 
 ## Tech Stack

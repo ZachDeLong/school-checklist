@@ -16,10 +16,13 @@ interface TaskStore {
   lastFetched: number | null
   syncing: boolean
   error: string | null
+  courseAliases: Record<string, string>
 
   syncCanvas: (force?: boolean) => Promise<void>
   toggleComplete: (id: string) => void
   addManualTask: (title: string, dueDate: string | null, courseName?: string) => void
+  setCourseAlias: (original: string, alias: string) => void
+  getCourseDisplayName: (original: string) => string
 }
 
 const STALE_THRESHOLD = 60 * 60 * 1000 // 1 hour
@@ -31,6 +34,7 @@ export const useTaskStore = create<TaskStore>()(
       lastFetched: null,
       syncing: false,
       error: null,
+      courseAliases: {},
 
       syncCanvas: async (force = false) => {
         const { lastFetched, syncing } = get()
@@ -96,6 +100,18 @@ export const useTaskStore = create<TaskStore>()(
           completed: false,
         }]
       })),
+
+      setCourseAlias: (original, alias) => set((state) => ({
+        courseAliases: {
+          ...state.courseAliases,
+          [original]: alias.trim() || original, // Reset to original if empty
+        }
+      })),
+
+      getCourseDisplayName: (original) => {
+        const { courseAliases } = get()
+        return courseAliases[original] || original
+      },
     }),
     { name: 'school-checklist-tasks' }
   )

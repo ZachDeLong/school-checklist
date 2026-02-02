@@ -56,3 +56,75 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.task-input-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.date-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.date-picker-btn:hover {
+  color: var(--accent-warm);
+  background: var(--bg-hover);
+}
+
+.date-picker-btn.has-date {
+  width: auto;
+  padding: 0 var(--space-2);
+  color: var(--accent-warm);
+  background: var(--accent-warm-glow);
+}
+
+.calendar-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.date-display {
+  font-family: var(--font-helvetica);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.date-input-hidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.clear-date-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  line-height: 1;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.clear-date-btn:hover {
+  color: var(--error);
+  background: var(--error-glow);
+}

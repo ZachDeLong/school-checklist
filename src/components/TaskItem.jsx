@@ -1,5 +1,7 @@
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { playCheckSound, playUncheckSound } from '../utils/sounds';
+import { useTaskStore } from '../store/taskStore';
 import './TaskItem.css';
 
 function formatDueDate(dateStr) {
@@ -31,9 +33,22 @@ function getDueStatus(dateStr) {
 }
 
 export default function TaskItem({ task, onToggle }) {
+  const { setCourseAlias, getCourseDisplayName } = useTaskStore();
+  const [isEditingCourse, setIsEditingCourse] = useState(false);
+  const [courseInput, setCourseInput] = useState('');
+  const courseInputRef = useRef(null);
+
   const displayText = task.title || task.text;
   const dueLabel = formatDueDate(task.dueDate);
   const dueStatus = getDueStatus(task.dueDate);
+  const displayCourseName = getCourseDisplayName(task.courseName);
+
+  useEffect(() => {
+    if (isEditingCourse && courseInputRef.current) {
+      courseInputRef.current.focus();
+      courseInputRef.current.select();
+    }
+  }, [isEditingCourse]);
 
   function handleToggle() {
     if (!task.completed) {
@@ -42,6 +57,28 @@ export default function TaskItem({ task, onToggle }) {
       playUncheckSound();
     }
     onToggle(task.id);
+  }
+
+  function handleCourseClick(e) {
+    e.stopPropagation();
+    setCourseInput(displayCourseName);
+    setIsEditingCourse(true);
+  }
+
+  function handleCourseBlur() {
+    if (courseInput.trim() && courseInput.trim() !== displayCourseName) {
+      setCourseAlias(task.courseName, courseInput.trim());
+    }
+    setIsEditingCourse(false);
+  }
+
+  function handleCourseKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCourseBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditingCourse(false);
+    }
   }
 
   return (
@@ -89,7 +126,26 @@ export default function TaskItem({ task, onToggle }) {
         </div>
         <div className="task-meta">
           {task.courseName && (
-            <span className="task-course">{task.courseName}</span>
+            isEditingCourse ? (
+              <input
+                ref={courseInputRef}
+                type="text"
+                className="course-edit-input"
+                value={courseInput}
+                onChange={(e) => setCourseInput(e.target.value)}
+                onBlur={handleCourseBlur}
+                onKeyDown={handleCourseKeyDown}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <button
+                className="task-course task-course-editable"
+                onClick={handleCourseClick}
+                title="Click to rename"
+              >
+                {displayCourseName}
+              </button>
+            )
           )}
           {dueLabel && (
             <span className={`task-due ${dueStatus}`}>{dueLabel}</span>
