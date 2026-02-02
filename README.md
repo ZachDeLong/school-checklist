@@ -45,9 +45,9 @@ Create a `.env` file in the project root:
 VITE_CANVAS_TOKEN=your_token_here
 ```
 
-### 5. Configure your Canvas instance (if needed)
+### 5. Configure your Canvas instance
 
-The app is configured for my school `ivc.instructure.com` by default. If your school uses a different Canvas URL, update `vite.config.ts`:
+The app is configured for my school `ivc.instructure.com` by default. For other schools you must update `vite.config.ts` to include their Canvas link:
 
 ```ts
 proxy: {
@@ -68,10 +68,10 @@ Open localhost in your browser.
 
 ## Important Notes
 
-- **Development only**: The Canvas API proxy only works in development mode (`npm run dev`). For production deployment, you'd need a backend server to handle API requests.
+- **Development only**: As of now the Canvas API proxy only works in development mode (`npm run dev`). 
 - **Token security**: Never commit your `.env` file... obviously.
 - **Rate limits**: Canvas has API rate limits so the app caches data and only re-syncs if data is older than 1 hour.
-- **Browser compatibility**: Works best in Chrome/Edge. If Canvas sync fails, check your browser console for CORS errors.
+- **Browser compatibility**: Works best in Chrome/Edge. If Canvas sync fails then check your browser console for CORS errors.
 
 ## Tech Stack
 
