@@ -200,3 +200,18 @@
     opacity: 1;
   }
 }
+
+/* Drag overlay styles */
+.drag-overlay-item {
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+  cursor: grabbing;
+}
+
+.drag-overlay-item .task-item {
+  border-bottom: none;
+}

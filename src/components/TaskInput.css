@@ -63,6 +63,52 @@
   gap: var(--space-1);
 }
 
+.course-selector {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  max-width: 120px;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.course-selector:hover {
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+}
+
+.course-selector:focus {
+  outline: none;
+  border-color: var(--accent-warm);
+  box-shadow: 0 0 0 2px var(--accent-warm-glow);
+}
+
+.course-input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.course-input {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--accent-warm);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  width: 120px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-warm-glow);
+}
+
+.course-input::placeholder {
+  color: var(--text-muted);
+}
+
 .date-picker-btn {
   display: flex;
   align-items: center;

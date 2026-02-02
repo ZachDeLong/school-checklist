@@ -203,6 +203,39 @@ body::before {
   border-radius: var(--radius-md);
 }
 
+/* Due Today Section */
+.due-today-section {
+  background: var(--accent-warm-glow);
+  border: 1px solid var(--accent-warm-dim);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.due-today-header {
+  font-family: var(--font-helvetica);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--accent-warm);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.due-today-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-2);
+  background: var(--accent-warm);
+  color: var(--bg-deep);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  border-radius: var(--radius-full);
+}
+
 @media (max-width: 480px) {
   .app {
     padding: var(--space-8) var(--space-4);

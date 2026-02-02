@@ -7,8 +7,20 @@ import FilterBar from './components/FilterBar';
 import TaskList from './components/TaskList';
 import { playCelebrationSound } from './utils/sounds';
 
+function isToday(dateStr) {
+  if (!dateStr) return false;
+  // Convert UTC date to local and compare
+  const date = new Date(dateStr);
+  const today = new Date();
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+}
+
 function App() {
-  const { tasks, syncing, error, syncCanvas, toggleComplete, addManualTask } = useTaskStore();
+  const { tasks, syncing, error, syncCanvas, toggleComplete, addManualTask, customOrder, customCourses, addCustomCourse } = useTaskStore();
   const prevAllDone = useRef(false);
 
   // Filter state (local, doesn't need persistence)
@@ -24,6 +36,12 @@ function App() {
   const totalCount = tasks.length;
   const completedCount = tasks.filter((t) => t.completed).length;
   const allDone = totalCount > 0 && completedCount === totalCount;
+
+  // Extract unique course names from Canvas tasks + custom courses
+  const canvasCourses = tasks
+    .filter(t => t.source === 'canvas' && t.courseName)
+    .map(t => t.courseName);
+  const courses = [...new Set([...canvasCourses, ...customCourses])].sort();
 
   // Sort and filter tasks
   const filteredTasks = tasks.filter((task) => {
@@ -42,12 +60,30 @@ function App() {
   });
 
   const sortedTasks = [...filteredTasks].sort((a, b) => {
+    // First sort by completion status
     if (a.completed !== b.completed) return a.completed - b.completed;
+
+    // If user has a custom order, use it
+    if (customOrder.length > 0) {
+      const aIndex = customOrder.indexOf(a.id);
+      const bIndex = customOrder.indexOf(b.id);
+      // If both are in custom order, sort by that
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      // If only one is in custom order, put it first
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+    }
+
+    // Fall back to due date sorting
     if (!a.dueDate && !b.dueDate) return 0;
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
     return new Date(a.dueDate) - new Date(b.dueDate);
   });
+
+  // Split tasks into "due today" and "other"
+  const dueTodayTasks = sortedTasks.filter(t => isToday(t.dueDate));
+  const otherTasks = sortedTasks.filter(t => !isToday(t.dueDate));
 
   useEffect(() => {
     if (allDone && !prevAllDone.current) {
@@ -70,8 +106,8 @@ function App() {
     prevAllDone.current = allDone;
   }, [allDone]);
 
-  function handleAddTask(text, dueDate) {
-    addManualTask(text, dueDate);
+  function handleAddTask(text, dueDate, courseName) {
+    addManualTask(text, dueDate, courseName);
   }
 
   return (
@@ -98,7 +134,7 @@ function App() {
       {syncing && <div className="sync-status">Syncing with Canvas...</div>}
       {error && <div className="sync-error">{error}</div>}
       <ProgressBar completedCount={completedCount} totalCount={totalCount} />
-      <TaskInput onAddTask={handleAddTask} />
+      <TaskInput onAddTask={handleAddTask} courses={courses} onAddCourse={addCustomCourse} />
       <FilterBar
         sourceFilter={sourceFilter}
         setSourceFilter={setSourceFilter}
@@ -107,10 +143,21 @@ function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
-      <TaskList
-        tasks={sortedTasks}
-        onToggle={toggleComplete}
-      />
+      {dueTodayTasks.length > 0 && (
+        <section className="due-today-section">
+          <h2 className="due-today-header">
+            Due Today
+            <span className="due-today-count">{dueTodayTasks.length}</span>
+          </h2>
+          <TaskList tasks={dueTodayTasks} onToggle={toggleComplete} />
+        </section>
+      )}
+      {otherTasks.length > 0 && (
+        <TaskList tasks={otherTasks} onToggle={toggleComplete} />
+      )}
+      {dueTodayTasks.length === 0 && otherTasks.length === 0 && (
+        <TaskList tasks={[]} onToggle={toggleComplete} />
+      )}
     </div>
   );
 }

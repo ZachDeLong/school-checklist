@@ -1,24 +1,33 @@
 import { useState, useRef } from 'react';
 import './TaskInput.css';
 
-export default function TaskInput({ onAddTask }) {
+export default function TaskInput({ onAddTask, courses = [], onAddCourse }) {
   const [text, setText] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('Personal');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isAddingCourse, setIsAddingCourse] = useState(false);
+  const [newCourseName, setNewCourseName] = useState('');
   const dateInputRef = useRef(null);
+  const courseInputRef = useRef(null);
 
   function handleSubmit(e) {
     e.preventDefault();
     if (!text.trim()) return;
-    onAddTask(text.trim(), dueDate || null);
+    onAddTask(text.trim(), dueDate || null, selectedCourse);
     setText('');
     setDueDate('');
+    setSelectedCourse('Personal');
     setShowDatePicker(false);
   }
 
   function handleDateClick() {
     setShowDatePicker(!showDatePicker);
     if (!showDatePicker) {
+      // Default to today's date if no date is selected
+      if (!dueDate) {
+        setDueDate(new Date().toISOString().split('T')[0]);
+      }
       setTimeout(() => dateInputRef.current?.showPicker?.(), 0);
     }
   }
@@ -27,6 +36,37 @@ export default function TaskInput({ onAddTask }) {
     if (!dateStr) return null;
     const date = new Date(dateStr + 'T00:00:00');
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function handleCourseChange(e) {
+    const value = e.target.value;
+    if (value === '__add_new__') {
+      setIsAddingCourse(true);
+      setNewCourseName('');
+      setTimeout(() => courseInputRef.current?.focus(), 0);
+    } else {
+      setSelectedCourse(value);
+    }
+  }
+
+  function handleAddCourse() {
+    const trimmed = newCourseName.trim();
+    if (trimmed && onAddCourse) {
+      onAddCourse(trimmed);
+      setSelectedCourse(trimmed);
+    }
+    setIsAddingCourse(false);
+    setNewCourseName('');
+  }
+
+  function handleCourseInputKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddCourse();
+    } else if (e.key === 'Escape') {
+      setIsAddingCourse(false);
+      setNewCourseName('');
+    }
   }
 
   return (
@@ -40,6 +80,33 @@ export default function TaskInput({ onAddTask }) {
         autoFocus
       />
       <div className="task-input-actions">
+        {isAddingCourse ? (
+          <div className="course-input-wrapper">
+            <input
+              ref={courseInputRef}
+              type="text"
+              className="course-input"
+              placeholder="Course name"
+              value={newCourseName}
+              onChange={(e) => setNewCourseName(e.target.value)}
+              onBlur={handleAddCourse}
+              onKeyDown={handleCourseInputKeyDown}
+            />
+          </div>
+        ) : (
+          <select
+            className="course-selector"
+            value={selectedCourse}
+            onChange={handleCourseChange}
+            aria-label="Select course"
+          >
+            <option value="Personal">Personal</option>
+            {courses.map((course) => (
+              <option key={course} value={course}>{course}</option>
+            ))}
+            <option value="__add_new__">+ Add course...</option>
+          </select>
+        )}
         <button
           type="button"
           className={`date-picker-btn ${dueDate ? 'has-date' : ''}`}

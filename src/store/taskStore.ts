@@ -17,12 +17,16 @@ interface TaskStore {
   syncing: boolean
   error: string | null
   courseAliases: Record<string, string>
+  customOrder: string[]
+  customCourses: string[]
 
   syncCanvas: (force?: boolean) => Promise<void>
   toggleComplete: (id: string) => void
   addManualTask: (title: string, dueDate: string | null, courseName?: string) => void
   setCourseAlias: (original: string, alias: string) => void
   getCourseDisplayName: (original: string) => string
+  reorderTasks: (activeId: string, overId: string) => void
+  addCustomCourse: (name: string) => void
 }
 
 const STALE_THRESHOLD = 60 * 60 * 1000 // 1 hour
@@ -35,6 +39,8 @@ export const useTaskStore = create<TaskStore>()(
       syncing: false,
       error: null,
       courseAliases: {},
+      customOrder: [],
+      customCourses: [],
 
       syncCanvas: async (force = false) => {
         const { lastFetched, syncing } = get()
@@ -112,6 +118,41 @@ export const useTaskStore = create<TaskStore>()(
         const { courseAliases } = get()
         return courseAliases[original] || original
       },
+
+      reorderTasks: (activeId, overId) => set((state) => {
+        const oldIndex = state.customOrder.indexOf(activeId)
+        const newIndex = state.customOrder.indexOf(overId)
+
+        // If items aren't in customOrder yet, initialize from current task order
+        let order = [...state.customOrder]
+        const taskIds = state.tasks.map(t => t.id)
+
+        // Add any missing task IDs to the order
+        for (const id of taskIds) {
+          if (!order.includes(id)) {
+            order.push(id)
+          }
+        }
+        // Remove any IDs no longer in tasks
+        order = order.filter(id => taskIds.includes(id))
+
+        const activeIdx = order.indexOf(activeId)
+        const overIdx = order.indexOf(overId)
+
+        if (activeIdx === -1 || overIdx === -1) return state
+
+        // Move item from old position to new position
+        order.splice(activeIdx, 1)
+        order.splice(overIdx, 0, activeId)
+
+        return { customOrder: order }
+      }),
+
+      addCustomCourse: (name) => set((state) => {
+        const trimmed = name.trim()
+        if (!trimmed || state.customCourses.includes(trimmed)) return state
+        return { customCourses: [...state.customCourses, trimmed] }
+      }),
     }),
     { name: 'school-checklist-tasks' }
   )

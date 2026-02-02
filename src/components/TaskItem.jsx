@@ -4,15 +4,22 @@ import { playCheckSound, playUncheckSound } from '../utils/sounds';
 import { useTaskStore } from '../store/taskStore';
 import './TaskItem.css';
 
+function parseLocalDate(dateStr) {
+  // Parse date string as local date to avoid timezone issues
+  const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 function formatDueDate(dateStr) {
   if (!dateStr) return null;
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   const now = new Date();
-  const tomorrow = new Date(now);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const isToday = date.toDateString() === now.toDateString();
-  const isTomorrow = date.toDateString() === tomorrow.toDateString();
+  const isToday = date.getTime() === today.getTime();
+  const isTomorrow = date.getTime() === tomorrow.getTime();
 
   if (isToday) return 'Today';
   if (isTomorrow) return 'Tomorrow';
@@ -22,13 +29,15 @@ function formatDueDate(dateStr) {
 
 function getDueStatus(dateStr) {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   const now = new Date();
-  if (date < now) return 'overdue';
-  const tomorrow = new Date(now);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (date.toDateString() === now.toDateString()) return 'due-today';
-  if (date.toDateString() === tomorrow.toDateString()) return 'due-soon';
+
+  if (date < today) return 'overdue';
+  if (date.getTime() === today.getTime()) return 'due-today';
+  if (date.getTime() === tomorrow.getTime()) return 'due-soon';
   return '';
 }
 

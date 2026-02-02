@@ -19,12 +19,19 @@ export interface CanvasAssignment {
   course_name: string
 }
 
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export async function fetchAssignments(): Promise<CanvasAssignment[]> {
-  // Get date range: today to 2 weeks out
+  // Get date range: today to 2 weeks out (using local dates)
   const today = new Date()
   const twoWeeksOut = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-  const startDate = today.toISOString().split('T')[0]
-  const endDate = twoWeeksOut.toISOString().split('T')[0]
+  const startDate = toLocalDateString(today)
+  const endDate = toLocalDateString(twoWeeksOut)
 
   // First, get all active courses to build context_codes
   const coursesRes = await fetch('/canvas-api/courses?enrollment_state=active')

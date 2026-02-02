@@ -1,0 +1,13 @@
+.sortable-task-item {
+  cursor: grab;
+  touch-action: none;
+}
+
+.sortable-task-item:active {
+  cursor: grabbing;
+}
+
+.sortable-task-item.is-dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
