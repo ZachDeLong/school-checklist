@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/canvas.js": {
+      "runtime": "edge"
+    }
+  },
   "rewrites": [
     { "source": "/api/canvas/:path*", "destination": "/api/canvas" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
