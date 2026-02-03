@@ -161,6 +161,124 @@
   box-shadow: var(--shadow-glow-warm);
 }
 
+/* Instances list */
+.instances-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.instance-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.instance-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.instance-name {
+  font-family: var(--font-helvetica);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.instance-url {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.instance-actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.instance-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.instance-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.instance-btn-danger:hover {
+  background: var(--error-glow);
+  color: var(--error);
+}
+
+/* Add button */
+.add-instance-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-helvetica);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.add-instance-btn:hover {
+  border-color: var(--accent-warm-dim);
+  color: var(--accent-warm);
+  background: var(--accent-warm-glow);
+}
+
+/* Form */
+.instance-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.settings-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-btn-primary:disabled:hover {
+  background: var(--accent-warm);
+  box-shadow: none;
+}
+
 @media (max-width: 480px) {
   .settings-modal {
     max-width: none;

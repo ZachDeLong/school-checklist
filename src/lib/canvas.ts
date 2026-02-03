@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { toLocalDateString } from '../utils/dateUtils'
-import { useSettingsStore } from '../store/settingsStore'
+import { useSettingsStore, type CanvasInstance } from '../store/settingsStore'
 
 const CalendarEventSchema = z.object({
   id: z.string(),
@@ -35,16 +35,13 @@ function safeJsonParse<T>(text: string): T {
   return JSON.parse(safeText)
 }
 
-export async function fetchAssignments(): Promise<CanvasAssignment[]> {
-  const { canvasToken, canvasUrl } = useSettingsStore.getState()
-
-  if (!canvasToken || !canvasUrl) {
-    throw new Error('Canvas not configured. Please add your token and school URL in Settings.')
-  }
-
+/**
+ * Fetch assignments from a single Canvas instance
+ */
+async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssignment[]> {
   const headers: Record<string, string> = {
-    'Authorization': `Bearer ${canvasToken}`,
-    'X-Canvas-Host': canvasUrl,
+    'Authorization': `Bearer ${instance.token}`,
+    'X-Canvas-Host': instance.url,
   }
 
   // Get date range: today to 2 weeks out (using local dates)
@@ -56,8 +53,8 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
   // First, get all active courses to build context_codes
   const coursesRes = await fetch('/api/canvas/courses?enrollment_state=active', { headers })
   if (!coursesRes.ok) {
-    if (coursesRes.status === 401) throw new Error('Invalid Canvas token')
-    throw new Error(`Canvas API error: ${coursesRes.status}`)
+    if (coursesRes.status === 401) throw new Error(`Invalid token for ${instance.name}`)
+    throw new Error(`${instance.name}: Canvas API error ${coursesRes.status}`)
   }
 
   const coursesText = await coursesRes.text()
@@ -81,6 +78,10 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
     courseIds = []
   }
 
+  if (courseIds.length === 0) {
+    return []
+  }
+
   // Build context_codes for calendar API
   const contextCodes = courseIds.map(id => `course_${id}`).join('&context_codes[]=')
 
@@ -89,7 +90,7 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
 
   const calendarRes = await fetch(calendarUrl, { headers })
   if (!calendarRes.ok) {
-    throw new Error(`Calendar API error: ${calendarRes.status}`)
+    throw new Error(`${instance.name}: Calendar API error ${calendarRes.status}`)
   }
 
   const calendarText = await calendarRes.text()
@@ -105,10 +106,10 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
       }
     }).filter((e: CalendarEvent | null): e is CalendarEvent => e !== null)
   } catch {
-    throw new Error('Failed to parse calendar events')
+    throw new Error(`${instance.name}: Failed to parse calendar events`)
   }
 
-  // Transform to our format
+  // Transform to our format, prefixing ID with instance name to ensure uniqueness
   return events.map((event) => {
     // Get due date from all_day_date, start_at, or end_at
     let dueDate = event.all_day_date || event.end_at || event.start_at || null
@@ -119,11 +120,53 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
     }
 
     return {
-      id: event.id,
+      id: `${instance.id}:${event.id}`,
       name: event.title,
       due_at: dueDate,
       course_id: event.context_name || 'Unknown',
       course_name: event.context_name || 'Unknown Course',
     }
   })
+}
+
+/**
+ * Fetch assignments from all configured Canvas instances
+ */
+export async function fetchAssignments(): Promise<CanvasAssignment[]> {
+  const { canvasInstances } = useSettingsStore.getState()
+
+  const validInstances = canvasInstances.filter(i => i.url && i.token)
+
+  if (validInstances.length === 0) {
+    throw new Error('No Canvas instances configured. Please add your schools in Settings.')
+  }
+
+  // Fetch from all instances in parallel
+  const results = await Promise.allSettled(
+    validInstances.map(instance => fetchFromInstance(instance))
+  )
+
+  // Collect all assignments and errors
+  const allAssignments: CanvasAssignment[] = []
+  const errors: string[] = []
+
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      allAssignments.push(...result.value)
+    } else {
+      errors.push(`${validInstances[index].name}: ${result.reason.message}`)
+    }
+  })
+
+  // If all instances failed, throw an error
+  if (allAssignments.length === 0 && errors.length > 0) {
+    throw new Error(errors.join('; '))
+  }
+
+  // Log warnings for partial failures but still return results
+  if (errors.length > 0) {
+    console.warn('Some Canvas instances failed:', errors)
+  }
+
+  return allAssignments
 }

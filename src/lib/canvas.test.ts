@@ -8,8 +8,12 @@ describe('fetchAssignments', () => {
   beforeEach(() => {
     // Set up mock settings before each test
     useSettingsStore.setState({
-      canvasToken: 'test-token',
-      canvasUrl: 'test.instructure.com',
+      canvasInstances: [{
+        id: 'test-instance',
+        name: 'Test School',
+        token: 'test-token',
+        url: 'test.instructure.com',
+      }],
     })
   })
 
@@ -18,12 +22,12 @@ describe('fetchAssignments', () => {
 
     expect(assignments).toHaveLength(2)
     expect(assignments[0]).toMatchObject({
-      id: '1001',
+      id: 'test-instance:1001',
       name: 'Homework 1',
       course_name: 'Intro to Computer Science',
     })
     expect(assignments[1]).toMatchObject({
-      id: '1002',
+      id: 'test-instance:1002',
       name: 'Quiz 2',
       course_name: 'Calculus I',
     })
@@ -46,13 +50,13 @@ describe('fetchAssignments', () => {
   it('throws error on 401 unauthorized', async () => {
     server.use(errorHandlers.unauthorized)
 
-    await expect(fetchAssignments()).rejects.toThrow('Invalid Canvas token')
+    await expect(fetchAssignments()).rejects.toThrow('Invalid token for Test School')
   })
 
   it('throws error on server errors', async () => {
     server.use(errorHandlers.serverError)
 
-    await expect(fetchAssignments()).rejects.toThrow('Canvas API error: 500')
+    await expect(fetchAssignments()).rejects.toThrow('Canvas API error 500')
   })
 
   it('throws error on invalid JSON response', async () => {
