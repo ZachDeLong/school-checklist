@@ -34,8 +34,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   }
 
   return (
-    <div className="settings-backdrop" onClick={handleBackdropClick}>
-      <div className="settings-modal">
+    <div className="settings-backdrop" onMouseDown={handleBackdropClick}>
+      <div className="settings-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="settings-header">
           <h2 className="settings-title">Settings</h2>
           <button className="settings-close" onClick={onClose} aria-label="Close">

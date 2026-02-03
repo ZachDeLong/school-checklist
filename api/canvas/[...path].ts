@@ -13,11 +13,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Get the path from the catch-all route
-  const { path } = req.query
+  const { path, ...queryParams } = req.query
   const canvasPath = Array.isArray(path) ? path.join('/') : path
 
+  // Build query string from remaining params
+  const queryString = Object.entries(queryParams)
+    .flatMap(([key, value]) => {
+      if (Array.isArray(value)) {
+        return value.map(v => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`)
+      }
+      return `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`
+    })
+    .join('&')
+
   // Build the Canvas API URL
-  const canvasUrl = `https://${canvasHost}/api/v1/${canvasPath}`
+  const canvasUrl = `https://${canvasHost}/api/v1/${canvasPath}${queryString ? `?${queryString}` : ''}`
 
   // Forward the request to Canvas
   const headers: Record<string, string> = {
