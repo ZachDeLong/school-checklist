@@ -1,34 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useTaskStore } from './store/taskStore';
 import ProgressBar from './components/ProgressBar';
 import TaskInput from './components/TaskInput';
-import FilterBar from './components/FilterBar';
+import FilterBar, { type SourceFilter } from './components/FilterBar';
 import TaskList from './components/TaskList';
 import { playCelebrationSound } from './utils/sounds';
-
-function isToday(dateStr) {
-  if (!dateStr) return false;
-  // Convert UTC date to local and compare
-  const date = new Date(dateStr);
-  const today = new Date();
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  );
-}
+import { isToday } from './utils/dateUtils';
 
 function App() {
   const { tasks, syncing, error, syncCanvas, toggleComplete, addManualTask, customOrder, customCourses, addCustomCourse } = useTaskStore();
   const prevAllDone = useRef(false);
 
-  // Filter state (local, doesn't need persistence)
-  const [sourceFilter, setSourceFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [hideCompleted, setHideCompleted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Sync Canvas on mount (force on first load)
   useEffect(() => {
     syncCanvas(true);
   }, []);
@@ -37,53 +24,52 @@ function App() {
   const completedCount = tasks.filter((t) => t.completed).length;
   const allDone = totalCount > 0 && completedCount === totalCount;
 
-  // Extract unique course names from Canvas tasks + custom courses
-  const canvasCourses = tasks
-    .filter(t => t.source === 'canvas' && t.courseName)
-    .map(t => t.courseName);
-  const courses = [...new Set([...canvasCourses, ...customCourses])].sort();
+  const courses = useMemo(() => {
+    const canvasCourses = tasks
+      .filter(t => t.source === 'canvas' && t.courseName)
+      .map(t => t.courseName);
+    return [...new Set([...canvasCourses, ...customCourses])].sort();
+  }, [tasks, customCourses]);
 
-  // Sort and filter tasks
-  const filteredTasks = tasks.filter((task) => {
-    // Source filter
-    if (sourceFilter !== 'all' && task.source !== sourceFilter) return false;
-    // Hide completed filter
-    if (hideCompleted && task.completed) return false;
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const titleMatch = task.title.toLowerCase().includes(query);
-      const courseMatch = task.courseName?.toLowerCase().includes(query);
-      if (!titleMatch && !courseMatch) return false;
-    }
-    return true;
-  });
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      if (sourceFilter !== 'all' && task.source !== sourceFilter) return false;
+      if (hideCompleted && task.completed) return false;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const titleMatch = task.title.toLowerCase().includes(query);
+        const courseMatch = task.courseName?.toLowerCase().includes(query);
+        if (!titleMatch && !courseMatch) return false;
+      }
+      return true;
+    });
+  }, [tasks, sourceFilter, hideCompleted, searchQuery]);
 
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    // First sort by completion status
-    if (a.completed !== b.completed) return a.completed - b.completed;
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      if (a.completed !== b.completed) return Number(a.completed) - Number(b.completed);
 
-    // If user has a custom order, use it
-    if (customOrder.length > 0) {
-      const aIndex = customOrder.indexOf(a.id);
-      const bIndex = customOrder.indexOf(b.id);
-      // If both are in custom order, sort by that
-      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-      // If only one is in custom order, put it first
-      if (aIndex !== -1) return -1;
-      if (bIndex !== -1) return 1;
-    }
+      if (customOrder.length > 0) {
+        const aIndex = customOrder.indexOf(a.id);
+        const bIndex = customOrder.indexOf(b.id);
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+      }
 
-    // Fall back to due date sorting
-    if (!a.dueDate && !b.dueDate) return 0;
-    if (!a.dueDate) return 1;
-    if (!b.dueDate) return -1;
-    return new Date(a.dueDate) - new Date(b.dueDate);
-  });
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+  }, [filteredTasks, customOrder]);
 
-  // Split tasks into "due today" and "other"
-  const dueTodayTasks = sortedTasks.filter(t => isToday(t.dueDate));
-  const otherTasks = sortedTasks.filter(t => !isToday(t.dueDate));
+  const { dueTodayTasks, otherTasks } = useMemo(() => {
+    return {
+      dueTodayTasks: sortedTasks.filter(t => isToday(t.dueDate)),
+      otherTasks: sortedTasks.filter(t => !isToday(t.dueDate)),
+    };
+  }, [sortedTasks]);
 
   useEffect(() => {
     if (allDone && !prevAllDone.current) {
@@ -106,9 +92,9 @@ function App() {
     prevAllDone.current = allDone;
   }, [allDone]);
 
-  function handleAddTask(text, dueDate, courseName) {
+  const handleAddTask = useCallback((text: string, dueDate: string | null, courseName: string) => {
     addManualTask(text, dueDate, courseName);
-  }
+  }, [addManualTask]);
 
   return (
     <div className="app">

@@ -1,7 +1,13 @@
+import { memo } from 'react';
 import { motion } from 'motion/react';
 import './ProgressBar.css';
 
-export default function ProgressBar({ completedCount, totalCount }) {
+interface ProgressBarProps {
+  completedCount: number;
+  totalCount: number;
+}
+
+function ProgressBar({ completedCount, totalCount }: ProgressBarProps) {
   if (totalCount === 0) {
     return (
       <div className="progress-empty">
@@ -28,3 +34,5 @@ export default function ProgressBar({ completedCount, totalCount }) {
     </div>
   );
 }
+
+export default memo(ProgressBar);

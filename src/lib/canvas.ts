@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { toLocalDateString } from '../utils/dateUtils'
 
 const CalendarEventSchema = z.object({
   id: z.string(),
@@ -11,6 +12,11 @@ const CalendarEventSchema = z.object({
 
 type CalendarEvent = z.infer<typeof CalendarEventSchema>
 
+const CourseSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+})
+
 export interface CanvasAssignment {
   id: string
   name: string
@@ -19,11 +25,13 @@ export interface CanvasAssignment {
   course_name: string
 }
 
-function toLocalDateString(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+/**
+ * Safely parse JSON that may contain large integers that would lose precision.
+ * Converts large integers (16+ digits) to strings to prevent precision loss.
+ */
+function safeJsonParse<T>(text: string): T {
+  const safeText = text.replace(/:(\s*)(\d{16,})([,}\]])/g, ':"$2"$3')
+  return JSON.parse(safeText)
 }
 
 export async function fetchAssignments(): Promise<CanvasAssignment[]> {
@@ -42,14 +50,23 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
 
   const coursesText = await coursesRes.text()
 
-  // Extract course IDs using regex to avoid precision loss
-  const courseIds: string[] = []
-  const courseRegex = /\{"id":(\d+),"name":"[^"]+"/g
-  let match
-  while ((match = courseRegex.exec(coursesText)) !== null) {
-    if (!courseIds.includes(match[1])) {
-      courseIds.push(match[1])
-    }
+  // Parse courses using Zod schema for validation
+  let courseIds: string[] = []
+  try {
+    const parsed = safeJsonParse<unknown[]>(coursesText)
+    courseIds = parsed
+      .map((course) => {
+        try {
+          const validated = CourseSchema.parse(course)
+          return String(validated.id)
+        } catch {
+          return null
+        }
+      })
+      .filter((id): id is string => id !== null)
+  } catch {
+    // If JSON parsing fails entirely, fall back to empty array
+    courseIds = []
   }
 
   // Build context_codes for calendar API

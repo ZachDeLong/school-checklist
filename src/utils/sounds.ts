@@ -1,8 +1,8 @@
-let audioCtx = null;
+let audioCtx: AudioContext | null = null;
 
-function getAudioContext() {
+function getAudioContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
@@ -10,7 +10,7 @@ function getAudioContext() {
   return audioCtx;
 }
 
-export function playCheckSound() {
+export function playCheckSound(): void {
   const ctx = getAudioContext();
   const now = ctx.currentTime;
 
@@ -31,7 +31,7 @@ export function playCheckSound() {
   osc.stop(now + 0.12);
 }
 
-export function playUncheckSound() {
+export function playUncheckSound(): void {
   const ctx = getAudioContext();
   const now = ctx.currentTime;
 
@@ -52,7 +52,7 @@ export function playUncheckSound() {
   osc.stop(now + 0.1);
 }
 
-export function playCelebrationSound() {
+export function playCelebrationSound(): void {
   const ctx = getAudioContext();
   const now = ctx.currentTime;
 

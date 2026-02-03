@@ -1,53 +1,23 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { motion } from 'motion/react';
 import { playCheckSound, playUncheckSound } from '../utils/sounds';
+import { formatDueDate, getDueStatus } from '../utils/dateUtils';
 import { useTaskStore } from '../store/taskStore';
+import type { Task } from '../schemas/task';
 import './TaskItem.css';
 
-function parseLocalDate(dateStr) {
-  // Parse date string as local date to avoid timezone issues
-  const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
-  return new Date(year, month - 1, day);
+interface TaskItemProps {
+  task: Task;
+  onToggle: (id: string) => void;
 }
 
-function formatDueDate(dateStr) {
-  if (!dateStr) return null;
-  const date = parseLocalDate(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const isToday = date.getTime() === today.getTime();
-  const isTomorrow = date.getTime() === tomorrow.getTime();
-
-  if (isToday) return 'Today';
-  if (isTomorrow) return 'Tomorrow';
-
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-}
-
-function getDueStatus(dateStr) {
-  if (!dateStr) return '';
-  const date = parseLocalDate(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  if (date < today) return 'overdue';
-  if (date.getTime() === today.getTime()) return 'due-today';
-  if (date.getTime() === tomorrow.getTime()) return 'due-soon';
-  return '';
-}
-
-export default function TaskItem({ task, onToggle }) {
+function TaskItem({ task, onToggle }: TaskItemProps) {
   const { setCourseAlias, getCourseDisplayName } = useTaskStore();
   const [isEditingCourse, setIsEditingCourse] = useState(false);
   const [courseInput, setCourseInput] = useState('');
-  const courseInputRef = useRef(null);
+  const courseInputRef = useRef<HTMLInputElement>(null);
 
-  const displayText = task.title || task.text;
+  const displayText = task.title;
   const dueLabel = formatDueDate(task.dueDate);
   const dueStatus = getDueStatus(task.dueDate);
   const displayCourseName = getCourseDisplayName(task.courseName);
@@ -68,7 +38,7 @@ export default function TaskItem({ task, onToggle }) {
     onToggle(task.id);
   }
 
-  function handleCourseClick(e) {
+  function handleCourseClick(e: React.MouseEvent) {
     e.stopPropagation();
     setCourseInput(displayCourseName);
     setIsEditingCourse(true);
@@ -81,7 +51,7 @@ export default function TaskItem({ task, onToggle }) {
     setIsEditingCourse(false);
   }
 
-  function handleCourseKeyDown(e) {
+  function handleCourseKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleCourseBlur();
@@ -164,3 +134,5 @@ export default function TaskItem({ task, onToggle }) {
     </motion.div>
   );
 }
+
+export default memo(TaskItem);

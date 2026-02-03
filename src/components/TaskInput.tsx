@@ -1,17 +1,24 @@
 import { useState, useRef } from 'react';
+import { formatDisplayDate } from '../utils/dateUtils';
 import './TaskInput.css';
 
-export default function TaskInput({ onAddTask, courses = [], onAddCourse }) {
+interface TaskInputProps {
+  onAddTask: (text: string, dueDate: string | null, courseName: string) => void;
+  courses?: string[];
+  onAddCourse?: (name: string) => void;
+}
+
+export default function TaskInput({ onAddTask, courses = [], onAddCourse }: TaskInputProps) {
   const [text, setText] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('Personal');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isAddingCourse, setIsAddingCourse] = useState(false);
   const [newCourseName, setNewCourseName] = useState('');
-  const dateInputRef = useRef(null);
-  const courseInputRef = useRef(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+  const courseInputRef = useRef<HTMLInputElement>(null);
 
-  function handleSubmit(e) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
     onAddTask(text.trim(), dueDate || null, selectedCourse);
@@ -24,7 +31,6 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }) {
   function handleDateClick() {
     setShowDatePicker(!showDatePicker);
     if (!showDatePicker) {
-      // Default to today's date if no date is selected
       if (!dueDate) {
         setDueDate(new Date().toISOString().split('T')[0]);
       }
@@ -32,13 +38,7 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }) {
     }
   }
 
-  function formatDisplayDate(dateStr) {
-    if (!dateStr) return null;
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-
-  function handleCourseChange(e) {
+  function handleCourseChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const value = e.target.value;
     if (value === '__add_new__') {
       setIsAddingCourse(true);
@@ -59,7 +59,7 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }) {
     setNewCourseName('');
   }
 
-  function handleCourseInputKeyDown(e) {
+  function handleCourseInputKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAddCourse();

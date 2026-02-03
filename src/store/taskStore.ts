@@ -1,15 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { fetchAssignments, type CanvasAssignment } from '../lib/canvas'
+import type { Task } from '../schemas/task'
 
-export interface Task {
-  id: string
-  title: string
-  dueDate: string | null
-  courseName: string
-  source: 'canvas' | 'manual'
-  completed: boolean
-}
+export type { Task }
 
 interface TaskStore {
   tasks: Task[]
@@ -120,9 +114,6 @@ export const useTaskStore = create<TaskStore>()(
       },
 
       reorderTasks: (activeId, overId) => set((state) => {
-        const oldIndex = state.customOrder.indexOf(activeId)
-        const newIndex = state.customOrder.indexOf(overId)
-
         // If items aren't in customOrder yet, initialize from current task order
         let order = [...state.customOrder]
         const taskIds = state.tasks.map(t => t.id)

@@ -7,6 +7,8 @@ import {
   useSensor,
   useSensors,
   DragOverlay,
+  DragStartEvent,
+  DragEndEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -17,11 +19,17 @@ import { AnimatePresence } from 'motion/react';
 import { useTaskStore } from '../store/taskStore';
 import SortableTaskItem from './SortableTaskItem';
 import TaskItem from './TaskItem';
+import type { Task } from '../schemas/task';
 import './TaskList.css';
 
-export default function TaskList({ tasks, onToggle }) {
+interface TaskListProps {
+  tasks: Task[];
+  onToggle: (id: string) => void;
+}
+
+export default function TaskList({ tasks, onToggle }: TaskListProps) {
   const { reorderTasks } = useTaskStore();
-  const [activeId, setActiveId] = useState(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -34,14 +42,14 @@ export default function TaskList({ tasks, onToggle }) {
     })
   );
 
-  function handleDragStart(event) {
-    setActiveId(event.active.id);
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string);
   }
 
-  function handleDragEnd(event) {
+  function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      reorderTasks(active.id, over.id);
+      reorderTasks(active.id as string, over.id as string);
     }
     setActiveId(null);
   }

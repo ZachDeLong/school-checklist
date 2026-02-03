@@ -1,13 +1,25 @@
+import { memo } from 'react';
 import './FilterBar.css';
 
-export default function FilterBar({
+export type SourceFilter = 'all' | 'canvas' | 'manual';
+
+interface FilterBarProps {
+  sourceFilter: SourceFilter;
+  setSourceFilter: (filter: SourceFilter) => void;
+  hideCompleted: boolean;
+  setHideCompleted: (hide: boolean) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+}
+
+function FilterBar({
   sourceFilter,
   setSourceFilter,
   hideCompleted,
   setHideCompleted,
   searchQuery,
   setSearchQuery,
-}) {
+}: FilterBarProps) {
   return (
     <div className="filter-bar">
       <div className="filter-chips">
@@ -67,3 +79,5 @@ export default function FilterBar({
     </div>
   );
 }
+
+export default memo(FilterBar);

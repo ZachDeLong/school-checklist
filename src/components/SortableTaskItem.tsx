@@ -1,9 +1,15 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TaskItem from './TaskItem';
+import type { Task } from '../schemas/task';
 import './SortableTaskItem.css';
 
-export default function SortableTaskItem({ task, onToggle }) {
+interface SortableTaskItemProps {
+  task: Task;
+  onToggle: (id: string) => void;
+}
+
+export default function SortableTaskItem({ task, onToggle }: SortableTaskItemProps) {
   const {
     attributes,
     listeners,
