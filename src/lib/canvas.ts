@@ -36,14 +36,15 @@ function safeJsonParse<T>(text: string): T {
 }
 
 export async function fetchAssignments(): Promise<CanvasAssignment[]> {
-  const { canvasToken } = useSettingsStore.getState()
+  const { canvasToken, canvasUrl } = useSettingsStore.getState()
 
-  if (!canvasToken) {
-    throw new Error('Canvas token not configured. Please add your token in Settings.')
+  if (!canvasToken || !canvasUrl) {
+    throw new Error('Canvas not configured. Please add your token and school URL in Settings.')
   }
 
-  const headers = {
+  const headers: Record<string, string> = {
     'Authorization': `Bearer ${canvasToken}`,
+    'X-Canvas-Host': canvasUrl,
   }
 
   // Get date range: today to 2 weeks out (using local dates)
@@ -53,7 +54,7 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
   const endDate = toLocalDateString(twoWeeksOut)
 
   // First, get all active courses to build context_codes
-  const coursesRes = await fetch('/canvas-api/courses?enrollment_state=active', { headers })
+  const coursesRes = await fetch('/api/canvas/courses?enrollment_state=active', { headers })
   if (!coursesRes.ok) {
     if (coursesRes.status === 401) throw new Error('Invalid Canvas token')
     throw new Error(`Canvas API error: ${coursesRes.status}`)
@@ -84,7 +85,7 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
   const contextCodes = courseIds.map(id => `course_${id}`).join('&context_codes[]=')
 
   // Fetch calendar events (includes assignments, quizzes, discussions)
-  const calendarUrl = `/canvas-api/calendar_events?type=assignment&start_date=${startDate}&end_date=${endDate}&context_codes[]=${contextCodes}&per_page=100`
+  const calendarUrl = `/api/canvas/calendar_events?type=assignment&start_date=${startDate}&end_date=${endDate}&context_codes[]=${contextCodes}&per_page=100`
 
   const calendarRes = await fetch(calendarUrl, { headers })
   if (!calendarRes.ok) {

@@ -25,7 +25,7 @@ const mockCalendarEvents = [
 ]
 
 export const handlers = [
-  http.get('/canvas-api/courses', ({ request }) => {
+  http.get('/api/canvas/courses', ({ request }) => {
     const url = new URL(request.url)
     const enrollmentState = url.searchParams.get('enrollment_state')
 
@@ -35,21 +35,21 @@ export const handlers = [
     return HttpResponse.json([])
   }),
 
-  http.get('/canvas-api/calendar_events', () => {
+  http.get('/api/canvas/calendar_events', () => {
     return HttpResponse.json(mockCalendarEvents)
   }),
 ]
 
 export const errorHandlers = {
-  unauthorized: http.get('/canvas-api/courses', () => {
+  unauthorized: http.get('/api/canvas/courses', () => {
     return new HttpResponse(null, { status: 401 })
   }),
 
-  serverError: http.get('/canvas-api/courses', () => {
+  serverError: http.get('/api/canvas/courses', () => {
     return new HttpResponse(null, { status: 500 })
   }),
 
-  invalidJson: http.get('/canvas-api/calendar_events', () => {
+  invalidJson: http.get('/api/canvas/calendar_events', () => {
     return new HttpResponse('not valid json', {
       headers: { 'Content-Type': 'application/json' },
     })
