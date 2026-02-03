@@ -63,7 +63,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="myschool.instructure.com"
             />
-            <p className="settings-hint">Your school's Canvas domain (e.g., myschool.instructure.com)</p>
+            <p className="settings-hint">Your school's Canvas domain (e.g., myschool.instructure.com or canvas.myschool.edu)</p>
           </div>
 
           <div className="settings-field">
