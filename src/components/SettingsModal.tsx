@@ -171,13 +171,35 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
 
               <div className="form-actions">
-                <button className="settings-btn settings-btn-secondary" onClick={resetForm}>
+                <button
+                  onClick={resetForm}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #2e2820',
+                    background: '#1a1714',
+                    color: '#a69f94',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontFamily: 'Helvetica Neue, sans-serif',
+                  }}
+                >
                   Cancel
                 </button>
                 <button
-                  className="settings-btn settings-btn-primary"
                   onClick={handleSave}
                   disabled={!name.trim() || !url.trim() || !token.trim()}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#d4a456',
+                    color: '#0f0d0b',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontFamily: 'Helvetica Neue, sans-serif',
+                    opacity: (!name.trim() || !url.trim() || !token.trim()) ? 0.5 : 1,
+                  }}
                 >
                   {isAdding ? 'Add School' : 'Save Changes'}
                 </button>
@@ -197,7 +219,19 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         <div className="settings-footer">
-          <button className="settings-btn settings-btn-secondary" onClick={handleClose}>
+          <button
+            onClick={handleClose}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid #2e2820',
+              background: '#1a1714',
+              color: '#a69f94',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontFamily: 'Helvetica Neue, sans-serif',
+            }}
+          >
             Done
           </button>
         </div>

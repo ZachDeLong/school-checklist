@@ -44,11 +44,11 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
     'X-Canvas-Host': instance.url,
   }
 
-  // Get date range: today to 2 weeks out (using local dates)
+  // Get date range: today to 7 days out (using local dates)
   const today = new Date()
-  const twoWeeksOut = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+  const sevenDaysOut = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   const startDate = toLocalDateString(today)
-  const endDate = toLocalDateString(twoWeeksOut)
+  const endDate = toLocalDateString(sevenDaysOut)
 
   // First, get all active courses to build context_codes
   const coursesRes = await fetch('/api/canvas/courses?enrollment_state=active', { headers })
