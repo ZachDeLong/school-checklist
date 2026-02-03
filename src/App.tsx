@@ -1,24 +1,30 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { useTaskStore } from './store/taskStore';
+import { useSettingsStore } from './store/settingsStore';
 import ProgressBar from './components/ProgressBar';
 import TaskInput from './components/TaskInput';
 import FilterBar, { type SourceFilter } from './components/FilterBar';
 import TaskList from './components/TaskList';
+import SettingsModal from './components/SettingsModal';
 import { playCelebrationSound } from './utils/sounds';
 import { isToday } from './utils/dateUtils';
 
 function App() {
   const { tasks, syncing, error, syncCanvas, toggleComplete, addManualTask, customOrder, customCourses, addCustomCourse } = useTaskStore();
+  const isConfigured = useSettingsStore((state) => state.isConfigured());
   const prevAllDone = useRef(false);
 
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [hideCompleted, setHideCompleted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
-    syncCanvas(true);
-  }, []);
+    if (isConfigured) {
+      syncCanvas(true);
+    }
+  }, [isConfigured]);
 
   const totalCount = tasks.length;
   const completedCount = tasks.filter((t) => t.completed).length;
@@ -100,23 +106,57 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1 className="app-title">my checklist</h1>
-        <button
-          className={`sync-btn ${syncing ? 'syncing' : ''}`}
-          onClick={() => syncCanvas(true)}
-          disabled={syncing}
-          aria-label="Sync with Canvas"
-        >
-          <svg viewBox="0 0 24 24" fill="none" className="sync-icon">
-            <path
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+        <div className="header-actions">
+          <button
+            className={`sync-btn ${syncing ? 'syncing' : ''}`}
+            onClick={() => syncCanvas(true)}
+            disabled={syncing || !isConfigured}
+            aria-label="Sync with Canvas"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="sync-icon">
+              <path
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            className="settings-btn"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="settings-icon">
+              <path
+                d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
       </header>
+      {!isConfigured && (
+        <div className="setup-prompt" onClick={() => setSettingsOpen(true)}>
+          <span className="setup-prompt-icon">
+            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+              <path d="M12 9v4m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </span>
+          <span>Configure Canvas to sync your assignments</span>
+        </div>
+      )}
       {syncing && <div className="sync-status">Syncing with Canvas...</div>}
       {error && <div className="sync-error">{error}</div>}
       <ProgressBar completedCount={completedCount} totalCount={totalCount} />
@@ -144,6 +184,7 @@ function App() {
       {dueTodayTasks.length === 0 && otherTasks.length === 0 && (
         <TaskList tasks={[]} onToggle={toggleComplete} />
       )}
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

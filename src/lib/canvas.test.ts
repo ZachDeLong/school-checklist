@@ -1,9 +1,18 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { server } from '../test/mocks/server'
 import { errorHandlers } from '../test/mocks/handlers'
 import { fetchAssignments } from './canvas'
+import { useSettingsStore } from '../store/settingsStore'
 
 describe('fetchAssignments', () => {
+  beforeEach(() => {
+    // Set up mock settings before each test
+    useSettingsStore.setState({
+      canvasToken: 'test-token',
+      canvasUrl: 'test.instructure.com',
+    })
+  })
+
   it('fetches and transforms calendar events into assignments', async () => {
     const assignments = await fetchAssignments()
 
