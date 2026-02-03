@@ -1,8 +1,14 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+export default async function handler(req, res) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Canvas-Host')
+    return res.status(200).end()
+  }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Get the Canvas domain from header
-  const canvasHost = req.headers['x-canvas-host'] as string
+  const canvasHost = req.headers['x-canvas-host']
   if (!canvasHost) {
     return res.status(400).json({ error: 'Missing X-Canvas-Host header' })
   }
@@ -22,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (Array.isArray(value)) {
         return value.map(v => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`)
       }
-      return `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`
+      return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
     })
     .join('&')
 
@@ -30,13 +36,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const canvasUrl = `https://${canvasHost}/api/v1/${canvasPath}${queryString ? `?${queryString}` : ''}`
 
   // Forward the request to Canvas
-  const headers: Record<string, string> = {
+  const headers = {
     'Content-Type': 'application/json',
   }
 
-  // Forward the Authorization header
   if (req.headers.authorization) {
-    headers['Authorization'] = req.headers.authorization as string
+    headers['Authorization'] = req.headers.authorization
   }
 
   try {
@@ -45,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers,
     })
 
-    // Get response body
     const data = await canvasRes.text()
 
     // Set CORS headers
@@ -53,12 +57,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Canvas-Host')
 
-    // Handle preflight
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end()
-    }
-
-    // Return the Canvas response
     return res.status(canvasRes.status).send(data)
   } catch (error) {
     console.error('Canvas proxy error:', error)
