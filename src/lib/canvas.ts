@@ -75,11 +75,12 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
     'X-Canvas-Host': instance.url,
   }
 
-  // Get date range: today to 7 days out (using local dates)
+  // Get date range: today to N days out based on user's timeframe setting
+  const { timeframeDays } = useSettingsStore.getState()
   const today = new Date()
-  const sevenDaysOut = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const endDay = new Date(Date.now() + timeframeDays * 24 * 60 * 60 * 1000)
   const startDate = toLocalDateString(today)
-  const endDate = toLocalDateString(sevenDaysOut)
+  const endDate = toLocalDateString(endDay)
 
   // Fetch all courses with pagination
   const rawCourses = await fetchAllPages('/api/canvas/courses?enrollment_state=active&per_page=100', headers)

@@ -1,16 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useSettingsStore, type CanvasInstance } from '../store/settingsStore'
-import Dropdown from './Dropdown'
 import './SettingsModal.css'
-
-const TIMEFRAME_OPTIONS = [
-  { value: 1, label: 'Today only' },
-  { value: 3, label: '3 days' },
-  { value: 7, label: '7 days' },
-  { value: 14, label: '14 days' },
-  { value: 30, label: '30 days' },
-]
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -245,14 +236,23 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           <div className="settings-field">
-            <label className="settings-label">Upcoming timeframe</label>
-            <Dropdown
-              options={TIMEFRAME_OPTIONS.map(o => ({ value: String(o.value), label: o.label }))}
-              value={String(timeframeDays)}
-              onChange={(v) => setTimeframeDays(Number(v))}
-              ariaLabel="Select timeframe"
-            />
-            <p className="settings-hint">Tasks due within this window appear in the highlighted section</p>
+            <label htmlFor="timeframe-days" className="settings-label">Upcoming timeframe</label>
+            <div className="timeframe-input-row">
+              <input
+                id="timeframe-days"
+                type="number"
+                className="settings-input timeframe-input"
+                min={1}
+                max={120}
+                value={timeframeDays}
+                onChange={(e) => {
+                  const v = Math.max(1, Math.min(120, Number(e.target.value) || 1))
+                  setTimeframeDays(v)
+                }}
+              />
+              <span className="timeframe-suffix">days</span>
+            </div>
+            <p className="settings-hint">Tasks due within this many days appear in the highlighted section (1–120)</p>
           </div>
         </div>
 
