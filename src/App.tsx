@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTaskStore } from './store/taskStore';
 import { useSettingsStore } from './store/settingsStore';
 import ProgressBar from './components/ProgressBar';
@@ -8,11 +9,14 @@ import FilterBar, { type SourceFilter } from './components/FilterBar';
 import TaskList from './components/TaskList';
 import SettingsModal from './components/SettingsModal';
 import { playCelebrationSound } from './utils/sounds';
-import { isToday } from './utils/dateUtils';
+import { isWithinDays } from './utils/dateUtils';
 
 function App() {
   const { tasks, syncing, error, syncCanvas, toggleComplete, addManualTask, customOrder, customCourses, addCustomCourse } = useTaskStore();
   const isConfigured = useSettingsStore((state) => state.isConfigured());
+  const theme = useSettingsStore((state) => state.theme);
+  const setTheme = useSettingsStore((state) => state.setTheme);
+  const timeframeDays = useSettingsStore((state) => state.timeframeDays);
   const prevAllDone = useRef(false);
 
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -25,6 +29,10 @@ function App() {
       syncCanvas(true);
     }
   }, [isConfigured]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const totalCount = tasks.length;
   const completedCount = tasks.filter((t) => t.completed).length;
@@ -70,12 +78,14 @@ function App() {
     });
   }, [filteredTasks, customOrder]);
 
-  const { dueTodayTasks, otherTasks } = useMemo(() => {
+  const { upcomingTasks, otherTasks } = useMemo(() => {
     return {
-      dueTodayTasks: sortedTasks.filter(t => isToday(t.dueDate)),
-      otherTasks: sortedTasks.filter(t => !isToday(t.dueDate)),
+      upcomingTasks: sortedTasks.filter(t => isWithinDays(t.dueDate, timeframeDays)),
+      otherTasks: sortedTasks.filter(t => !isWithinDays(t.dueDate, timeframeDays)),
     };
-  }, [sortedTasks]);
+  }, [sortedTasks, timeframeDays]);
+
+  const upcomingLabel = timeframeDays === 1 ? 'Due Today' : `Next ${timeframeDays} Days`;
 
   useEffect(() => {
     if (allDone && !prevAllDone.current) {
@@ -124,6 +134,42 @@ function App() {
             </svg>
           </button>
           <button
+            className="theme-toggle-btn"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              {theme === 'dark' ? (
+                <motion.svg
+                  key="sun"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="theme-icon"
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </motion.svg>
+              ) : (
+                <motion.svg
+                  key="moon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="theme-icon"
+                  initial={{ rotate: 90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: -90, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </motion.svg>
+              )}
+            </AnimatePresence>
+          </button>
+          <button
             className="settings-btn"
             onClick={() => setSettingsOpen(true)}
             aria-label="Settings"
@@ -169,19 +215,27 @@ function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
-      {dueTodayTasks.length > 0 && (
-        <section className="due-today-section">
-          <h2 className="due-today-header">
-            Due Today
-            <span className="due-today-count">{dueTodayTasks.length}</span>
-          </h2>
-          <TaskList tasks={dueTodayTasks} onToggle={toggleComplete} />
-        </section>
-      )}
+      <AnimatePresence>
+        {upcomingTasks.length > 0 && (
+          <motion.section
+            className="due-today-section"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <h2 className="due-today-header">
+              {upcomingLabel}
+              <span className="due-today-count">{upcomingTasks.length}</span>
+            </h2>
+            <TaskList tasks={upcomingTasks} onToggle={toggleComplete} />
+          </motion.section>
+        )}
+      </AnimatePresence>
       {otherTasks.length > 0 && (
         <TaskList tasks={otherTasks} onToggle={toggleComplete} />
       )}
-      {dueTodayTasks.length === 0 && otherTasks.length === 0 && (
+      {upcomingTasks.length === 0 && otherTasks.length === 0 && (
         <TaskList tasks={[]} onToggle={toggleComplete} />
       )}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />

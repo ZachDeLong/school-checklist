@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { formatDisplayDate } from '../utils/dateUtils';
+import Dropdown from './Dropdown';
 import './TaskInput.css';
 
 interface TaskInputProps {
@@ -38,8 +39,7 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
     }
   }
 
-  function handleCourseChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const value = e.target.value;
+  function handleCourseChange(value: string) {
     if (value === '__add_new__') {
       setIsAddingCourse(true);
       setNewCourseName('');
@@ -94,18 +94,17 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
             />
           </div>
         ) : (
-          <select
-            className="course-selector"
+          <Dropdown
+            variant="compact"
             value={selectedCourse}
             onChange={handleCourseChange}
-            aria-label="Select course"
-          >
-            <option value="Personal">Personal</option>
-            {courses.map((course) => (
-              <option key={course} value={course}>{course}</option>
-            ))}
-            <option value="__add_new__">+ Add course...</option>
-          </select>
+            ariaLabel="Select course"
+            options={[
+              { value: 'Personal', label: 'Personal' },
+              ...courses.map(c => ({ value: c, label: c })),
+              { value: '__add_new__', label: '+ Add course...' },
+            ]}
+          />
         )}
         <button
           type="button"

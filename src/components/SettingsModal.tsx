@@ -1,6 +1,16 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import { useSettingsStore, type CanvasInstance } from '../store/settingsStore'
+import Dropdown from './Dropdown'
 import './SettingsModal.css'
+
+const TIMEFRAME_OPTIONS = [
+  { value: 1, label: 'Today only' },
+  { value: 3, label: '3 days' },
+  { value: 7, label: '7 days' },
+  { value: 14, label: '14 days' },
+  { value: 30, label: '30 days' },
+]
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -8,7 +18,7 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { canvasInstances, addCanvasInstance, updateCanvasInstance, removeCanvasInstance } = useSettingsStore()
+  const { canvasInstances, addCanvasInstance, updateCanvasInstance, removeCanvasInstance, timeframeDays, setTimeframeDays } = useSettingsStore()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
 
@@ -16,8 +26,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
   const [token, setToken] = useState('')
-
-  if (!isOpen) return null
 
   const resetForm = () => {
     setName('')
@@ -73,8 +81,24 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   }
 
   return (
-    <div className="settings-backdrop" onMouseDown={handleBackdropClick}>
-      <div className="settings-modal" onMouseDown={(e) => e.stopPropagation()}>
+    <AnimatePresence>
+      {isOpen && (
+    <motion.div
+      className="settings-backdrop"
+      onMouseDown={handleBackdropClick}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <motion.div
+        className="settings-modal"
+        onMouseDown={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      >
         <div className="settings-header">
           <h2 className="settings-title">Settings</h2>
           <button className="settings-close" onClick={handleClose} aria-label="Close">
@@ -93,8 +117,16 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           {/* List of configured instances */}
+          <AnimatePresence mode="wait">
           {canvasInstances.length > 0 && !isAdding && !editingId && (
-            <div className="instances-list">
+            <motion.div
+              className="instances-list"
+              key="instances-list"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
               {canvasInstances.map((instance) => (
                 <div key={instance.id} className="instance-item">
                   <div className="instance-info">
@@ -124,12 +156,19 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </div>
                 </div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           {/* Add/Edit form */}
           {(isAdding || editingId) && (
-            <div className="instance-form">
+            <motion.div
+              className="instance-form"
+              key="instance-form"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            >
               <div className="settings-field">
                 <label htmlFor="instance-name" className="settings-label">School Name</label>
                 <input
@@ -172,40 +211,22 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
               <div className="form-actions">
                 <button
+                  className="settings-btn settings-btn-secondary"
                   onClick={resetForm}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #2e2820',
-                    background: '#1a1714',
-                    color: '#a69f94',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontFamily: 'Helvetica Neue, sans-serif',
-                  }}
                 >
                   Cancel
                 </button>
                 <button
+                  className="settings-btn settings-btn-primary"
                   onClick={handleSave}
                   disabled={!name.trim() || !url.trim() || !token.trim()}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#d4a456',
-                    color: '#0f0d0b',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontFamily: 'Helvetica Neue, sans-serif',
-                    opacity: (!name.trim() || !url.trim() || !token.trim()) ? 0.5 : 1,
-                  }}
                 >
                   {isAdding ? 'Add School' : 'Save Changes'}
                 </button>
               </div>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
 
           {/* Add button */}
           {!isAdding && !editingId && (
@@ -216,26 +237,36 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               Add School
             </button>
           )}
+
+          <hr className="settings-divider" />
+
+          <div className="settings-section">
+            <h3 className="settings-section-title">Display</h3>
+          </div>
+
+          <div className="settings-field">
+            <label className="settings-label">Upcoming timeframe</label>
+            <Dropdown
+              options={TIMEFRAME_OPTIONS.map(o => ({ value: String(o.value), label: o.label }))}
+              value={String(timeframeDays)}
+              onChange={(v) => setTimeframeDays(Number(v))}
+              ariaLabel="Select timeframe"
+            />
+            <p className="settings-hint">Tasks due within this window appear in the highlighted section</p>
+          </div>
         </div>
 
         <div className="settings-footer">
           <button
+            className="settings-btn settings-btn-secondary"
             onClick={handleClose}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '1px solid #2e2820',
-              background: '#1a1714',
-              color: '#a69f94',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontFamily: 'Helvetica Neue, sans-serif',
-            }}
           >
             Done
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

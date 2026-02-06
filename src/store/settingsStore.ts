@@ -8,11 +8,17 @@ export interface CanvasInstance {
   token: string
 }
 
+type Theme = 'light' | 'dark'
+
 interface SettingsState {
   canvasInstances: CanvasInstance[]
+  theme: Theme
+  timeframeDays: number
   addCanvasInstance: (name: string, url: string, token: string) => void
   updateCanvasInstance: (id: string, updates: Partial<Omit<CanvasInstance, 'id'>>) => void
   removeCanvasInstance: (id: string) => void
+  setTheme: (theme: Theme) => void
+  setTimeframeDays: (days: number) => void
   isConfigured: () => boolean
   // Legacy getters for backwards compatibility
   canvasToken: string
@@ -23,6 +29,8 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       canvasInstances: [],
+      theme: 'dark' as Theme,
+      timeframeDays: 7,
 
       addCanvasInstance: (name, url, token) => {
         const instance: CanvasInstance = {
@@ -57,6 +65,9 @@ export const useSettingsStore = create<SettingsState>()(
           canvasInstances: state.canvasInstances.filter((instance) => instance.id !== id),
         }))
       },
+
+      setTheme: (theme) => set({ theme }),
+      setTimeframeDays: (days) => set({ timeframeDays: days }),
 
       isConfigured: () => {
         const { canvasInstances } = get()

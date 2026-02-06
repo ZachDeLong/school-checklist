@@ -54,6 +54,24 @@ export function isToday(dateStr: string | null): boolean {
 }
 
 /**
+ * Checks if a date string is within the next N days OR is overdue (past due).
+ * Overdue tasks always return true so they appear in the urgent section.
+ */
+export function isWithinDays(dateStr: string | null, days: number): boolean {
+  if (!dateStr) return false;
+  const date = parseLocalDate(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Overdue tasks always qualify
+  if (date < today) return true;
+
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() + days);
+  return date < cutoff;
+}
+
+/**
  * Formats a date string for short display (e.g., "Feb 15").
  * Used in TaskInput for displaying selected due dates.
  */

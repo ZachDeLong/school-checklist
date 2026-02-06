@@ -23,6 +23,7 @@
   border-radius: var(--radius-full);
   background: var(--bg-elevated);
   overflow: hidden;
+  transition: background var(--duration-smooth) var(--ease-default);
 }
 
 .progress-fill {
