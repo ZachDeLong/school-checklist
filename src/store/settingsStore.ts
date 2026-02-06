@@ -10,6 +10,25 @@ export interface CanvasInstance {
 
 type Theme = 'light' | 'dark'
 
+const STORAGE_KEY = 'school-checklist-settings'
+
+function getStoredSettings(): { theme: Theme; timeframeDays: number; canvasInstances: CanvasInstance[] } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return {
+        theme: parsed.state?.theme || 'dark',
+        timeframeDays: parsed.state?.timeframeDays || 7,
+        canvasInstances: parsed.state?.canvasInstances || [],
+      }
+    }
+  } catch {}
+  return { theme: 'dark', timeframeDays: 7, canvasInstances: [] }
+}
+
+const stored = getStoredSettings()
+
 interface SettingsState {
   canvasInstances: CanvasInstance[]
   theme: Theme
@@ -28,9 +47,9 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
-      canvasInstances: [],
-      theme: 'dark' as Theme,
-      timeframeDays: 7,
+      canvasInstances: stored.canvasInstances,
+      theme: stored.theme,
+      timeframeDays: stored.timeframeDays,
 
       addCanvasInstance: (name, url, token) => {
         const instance: CanvasInstance = {
@@ -85,7 +104,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
     }),
     {
-      name: 'school-checklist-settings',
+      name: STORAGE_KEY,
       partialize: (state) => ({
         canvasInstances: state.canvasInstances,
         theme: state.theme,
