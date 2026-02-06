@@ -91,9 +91,21 @@ export const useSettingsStore = create<SettingsState>()(
         theme: state.theme,
         timeframeDays: state.timeframeDays,
       }),
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (state?.theme) {
+            document.documentElement.setAttribute('data-theme', state.theme)
+          }
+        }
+      },
     }
   )
 )
+
+// Keep data-theme attribute in sync outside of React's render cycle
+useSettingsStore.subscribe((state) => {
+  document.documentElement.setAttribute('data-theme', state.theme)
+})
 
 function normalizeCanvasUrl(url: string): string {
   let normalized = url.trim().toLowerCase()
