@@ -86,6 +86,11 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'school-checklist-settings',
+      partialize: (state) => ({
+        canvasInstances: state.canvasInstances,
+        theme: state.theme,
+        timeframeDays: state.timeframeDays,
+      }),
     }
   )
 )
