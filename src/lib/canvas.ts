@@ -27,12 +27,43 @@ export interface CanvasAssignment {
 }
 
 /**
- * Safely parse JSON that may contain large integers that would lose precision.
- * Converts large integers (16+ digits) to strings to prevent precision loss.
+ * Parse the Link header to find the "next" page URL.
  */
-function safeJsonParse<T>(text: string): T {
-  const safeText = text.replace(/:(\s*)(\d{16,})([,}\]])/g, ':"$2"$3')
-  return JSON.parse(safeText)
+function parseNextLink(linkHeader: string | null): string | null {
+  if (!linkHeader) return null
+  const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
+  return match?.[1] ?? null
+}
+
+/**
+ * Fetch all pages from a paginated Canvas API endpoint.
+ */
+async function fetchAllPages(url: string, headers: Record<string, string>): Promise<unknown[]> {
+  const results: unknown[] = []
+  let nextUrl: string | null = url
+
+  while (nextUrl) {
+    const res = await fetch(nextUrl, { headers })
+    if (!res.ok) {
+      if (res.status === 401) throw new Error('Invalid Canvas token')
+      throw new Error(`Canvas API error: ${res.status}`)
+    }
+
+    const data: unknown = await res.json()
+    if (!Array.isArray(data)) break
+    results.push(...data)
+
+    const linkHeader = res.headers.get('Link')
+    const nextLink = parseNextLink(linkHeader)
+    if (nextLink) {
+      // Canvas returns absolute URLs; rewrite to go through our proxy
+      nextUrl = nextLink.replace(/^https?:\/\/[^/]+\/api\/v1/, '/api/canvas')
+    } else {
+      nextUrl = null
+    }
+  }
+
+  return results
 }
 
 /**
@@ -50,33 +81,15 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
   const startDate = toLocalDateString(today)
   const endDate = toLocalDateString(sevenDaysOut)
 
-  // First, get all active courses to build context_codes
-  const coursesRes = await fetch('/api/canvas/courses?enrollment_state=active', { headers })
-  if (!coursesRes.ok) {
-    if (coursesRes.status === 401) throw new Error(`Invalid token for ${instance.name}`)
-    throw new Error(`${instance.name}: Canvas API error ${coursesRes.status}`)
-  }
+  // Fetch all courses with pagination
+  const rawCourses = await fetchAllPages('/api/canvas/courses?enrollment_state=active&per_page=100', headers)
 
-  const coursesText = await coursesRes.text()
-
-  // Parse courses using Zod schema for validation
-  let courseIds: string[] = []
-  try {
-    const parsed = safeJsonParse<unknown[]>(coursesText)
-    courseIds = parsed
-      .map((course) => {
-        try {
-          const validated = CourseSchema.parse(course)
-          return String(validated.id)
-        } catch {
-          return null
-        }
-      })
-      .filter((id): id is string => id !== null)
-  } catch {
-    // If JSON parsing fails entirely, fall back to empty array
-    courseIds = []
-  }
+  const courseIds = rawCourses
+    .map((course) => {
+      const parsed = CourseSchema.safeParse(course)
+      return parsed.success ? String(parsed.data.id) : null
+    })
+    .filter((id): id is string => id !== null)
 
   if (courseIds.length === 0) {
     return []
@@ -85,29 +98,17 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
   // Build context_codes for calendar API
   const contextCodes = courseIds.map(id => `course_${id}`).join('&context_codes[]=')
 
-  // Fetch calendar events (includes assignments, quizzes, discussions)
+  // Fetch all calendar events with pagination
   const calendarUrl = `/api/canvas/calendar_events?type=assignment&start_date=${startDate}&end_date=${endDate}&context_codes[]=${contextCodes}&per_page=100`
 
-  const calendarRes = await fetch(calendarUrl, { headers })
-  if (!calendarRes.ok) {
-    throw new Error(`${instance.name}: Calendar API error ${calendarRes.status}`)
-  }
+  const rawEvents = await fetchAllPages(calendarUrl, headers)
 
-  const calendarText = await calendarRes.text()
-  let events: CalendarEvent[] = []
-
-  try {
-    const parsed = JSON.parse(calendarText)
-    events = parsed.map((e: unknown) => {
-      try {
-        return CalendarEventSchema.parse(e)
-      } catch {
-        return null
-      }
-    }).filter((e: CalendarEvent | null): e is CalendarEvent => e !== null)
-  } catch {
-    throw new Error(`${instance.name}: Failed to parse calendar events`)
-  }
+  const events = rawEvents
+    .map((e) => {
+      const parsed = CalendarEventSchema.safeParse(e)
+      return parsed.success ? parsed.data : null
+    })
+    .filter((e): e is CalendarEvent => e !== null)
 
   // Transform to our format, prefixing ID with instance name to ensure uniqueness
   return events.map((event) => {

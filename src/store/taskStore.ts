@@ -17,8 +17,8 @@ interface TaskStore {
   syncCanvas: (force?: boolean) => Promise<void>
   toggleComplete: (id: string) => void
   addManualTask: (title: string, dueDate: string | null, courseName?: string) => void
+  deleteTask: (id: string) => void
   setCourseAlias: (original: string, alias: string) => void
-  getCourseDisplayName: (original: string) => string
   reorderTasks: (activeId: string, overId: string) => void
   addCustomCourse: (name: string) => void
 }
@@ -101,17 +101,17 @@ export const useTaskStore = create<TaskStore>()(
         }]
       })),
 
+      deleteTask: (id) => set((state) => ({
+        tasks: state.tasks.filter(t => t.id !== id),
+        customOrder: state.customOrder.filter(orderId => orderId !== id),
+      })),
+
       setCourseAlias: (original, alias) => set((state) => ({
         courseAliases: {
           ...state.courseAliases,
-          [original]: alias.trim() || original, // Reset to original if empty
+          [original]: alias.trim() || original,
         }
       })),
-
-      getCourseDisplayName: (original) => {
-        const { courseAliases } = get()
-        return courseAliases[original] || original
-      },
 
       reorderTasks: (activeId, overId) => set((state) => {
         // If items aren't in customOrder yet, initialize from current task order

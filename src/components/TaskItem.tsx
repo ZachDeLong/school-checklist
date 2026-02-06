@@ -12,7 +12,11 @@ interface TaskItemProps {
 }
 
 function TaskItem({ task, onToggle }: TaskItemProps) {
-  const { setCourseAlias, getCourseDisplayName } = useTaskStore();
+  const setCourseAlias = useTaskStore((state) => state.setCourseAlias);
+  const deleteTask = useTaskStore((state) => state.deleteTask);
+  const displayCourseName = useTaskStore(
+    (state) => state.courseAliases[task.courseName] || task.courseName
+  );
   const [isEditingCourse, setIsEditingCourse] = useState(false);
   const [courseInput, setCourseInput] = useState('');
   const courseInputRef = useRef<HTMLInputElement>(null);
@@ -20,7 +24,6 @@ function TaskItem({ task, onToggle }: TaskItemProps) {
   const displayText = task.title;
   const dueLabel = formatDueDate(task.dueDate);
   const dueStatus = getDueStatus(task.dueDate);
-  const displayCourseName = getCourseDisplayName(task.courseName);
 
   useEffect(() => {
     if (isEditingCourse && courseInputRef.current) {
@@ -131,6 +134,16 @@ function TaskItem({ task, onToggle }: TaskItemProps) {
           )}
         </div>
       </div>
+
+      {task.source === 'manual' && (
+        <button
+          className="task-delete"
+          onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }}
+          aria-label="Delete task"
+        >
+          &times;
+        </button>
+      )}
     </motion.div>
   );
 }

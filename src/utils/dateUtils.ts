@@ -47,13 +47,10 @@ export function getDueStatus(dateStr: string | null): string {
  */
 export function isToday(dateStr: string | null): boolean {
   if (!dateStr) return false;
-  const date = new Date(dateStr);
-  const today = new Date();
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  );
+  const date = parseLocalDate(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return date.getTime() === today.getTime();
 }
 
 /**
