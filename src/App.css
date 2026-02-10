@@ -1,3 +1,17 @@
+@theme {
+  --color-warm-50: #fdf8f0;
+  --color-warm-100: #f5ead6;
+  --color-warm-200: #e8d4ad;
+  --color-warm-300: #dfc08a;
+  --color-warm-400: #d4a456;
+  --color-warm-500: #b8944d;
+  --color-warm-600: #9a7a3e;
+  --color-warm-700: #7a6032;
+  --color-warm-800: #5c4826;
+  --color-warm-900: #3e301a;
+  --color-warm-950: #0f0d0b;
+}
+
 :root {
   /* Backgrounds - warm darks */
   --bg-deep: #0f0d0b;
@@ -38,7 +52,7 @@
   --border-focus: var(--accent-warm-dim);
 
   /* Typography */
-  --font-helvetica: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-helvetica: 'HelveticaNeue LT 55 Roman', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-body: 'EB Garamond', Georgia, serif;
 
   /* Sizes */
@@ -207,7 +221,7 @@ body::before {
 }
 
 .app-title {
-  font-family: var(--font-helvetica);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: var(--text-3xl);
   font-style: italic;
   font-weight: 700;

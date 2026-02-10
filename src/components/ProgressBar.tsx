@@ -9,11 +9,7 @@ interface ProgressBarProps {
 
 function ProgressBar({ completedCount, totalCount }: ProgressBarProps) {
   if (totalCount === 0) {
-    return (
-      <div className="progress-empty">
-        Add your first task to get started
-      </div>
-    );
+    return null;
   }
 
   const percentage = Math.round((completedCount / totalCount) * 100);

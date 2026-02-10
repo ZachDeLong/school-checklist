@@ -17,6 +17,8 @@ function App() {
   const theme = useSettingsStore((state) => state.theme);
   const setTheme = useSettingsStore((state) => state.setTheme);
   const timeframeDays = useSettingsStore((state) => state.timeframeDays);
+  const soundEnabled = useSettingsStore((state) => state.soundEnabled);
+  const confettiEnabled = useSettingsStore((state) => state.confettiEnabled);
   const prevAllDone = useRef(false);
 
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -89,24 +91,28 @@ function App() {
 
   useEffect(() => {
     if (allDone && !prevAllDone.current) {
-      confetti({
-        particleCount: 80,
-        spread: 100,
-        origin: { x: 0.3, y: 0.6 },
-        colors: ['#d4a456', '#e0b366', '#9b8aa6', '#7d9c73', '#a6867d'],
-      });
-      setTimeout(() => {
+      if (confettiEnabled) {
         confetti({
           particleCount: 80,
           spread: 100,
-          origin: { x: 0.7, y: 0.6 },
+          origin: { x: 0.3, y: 0.6 },
           colors: ['#d4a456', '#e0b366', '#9b8aa6', '#7d9c73', '#a6867d'],
         });
-      }, 150);
-      playCelebrationSound();
+        setTimeout(() => {
+          confetti({
+            particleCount: 80,
+            spread: 100,
+            origin: { x: 0.7, y: 0.6 },
+            colors: ['#d4a456', '#e0b366', '#9b8aa6', '#7d9c73', '#a6867d'],
+          });
+        }, 150);
+      }
+      if (soundEnabled) {
+        playCelebrationSound();
+      }
     }
     prevAllDone.current = allDone;
-  }, [allDone]);
+  }, [allDone, confettiEnabled, soundEnabled]);
 
   const handleAddTask = useCallback((text: string, dueDate: string | null, courseName: string) => {
     addManualTask(text, dueDate, courseName);

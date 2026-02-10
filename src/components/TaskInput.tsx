@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { formatDisplayDate } from '../utils/dateUtils';
 import Dropdown from './Dropdown';
+import CalendarPicker from './CalendarPicker';
 import './TaskInput.css';
 
 interface TaskInputProps {
@@ -16,7 +18,7 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isAddingCourse, setIsAddingCourse] = useState(false);
   const [newCourseName, setNewCourseName] = useState('');
-  const dateInputRef = useRef<HTMLInputElement>(null);
+  const dateButtonRef = useRef<HTMLButtonElement>(null);
   const courseInputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit(e: React.FormEvent) {
@@ -31,12 +33,6 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
 
   function handleDateClick() {
     setShowDatePicker(!showDatePicker);
-    if (!showDatePicker) {
-      if (!dueDate) {
-        setDueDate(new Date().toISOString().split('T')[0]);
-      }
-      setTimeout(() => dateInputRef.current?.showPicker?.(), 0);
-    }
   }
 
   function handleCourseChange(value: string) {
@@ -106,31 +102,36 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
             ]}
           />
         )}
-        <button
-          type="button"
-          className={`date-picker-btn ${dueDate ? 'has-date' : ''}`}
-          onClick={handleDateClick}
-          aria-label="Set due date"
-        >
-          {dueDate ? (
-            <span className="date-display">{formatDisplayDate(dueDate)}</span>
-          ) : (
-            <svg viewBox="0 0 24 24" fill="none" className="calendar-icon">
-              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
-            </svg>
-          )}
-        </button>
-        <input
-          ref={dateInputRef}
-          type="date"
-          className="date-input-hidden"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          min={new Date().toISOString().split('T')[0]}
-        />
+        <div className="date-picker-wrapper">
+          <button
+            ref={dateButtonRef}
+            type="button"
+            className={`date-picker-btn ${dueDate ? 'has-date' : ''}`}
+            onClick={handleDateClick}
+            aria-label="Set due date"
+          >
+            {dueDate ? (
+              <span className="date-display">{formatDisplayDate(dueDate)}</span>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" className="calendar-icon">
+                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            )}
+          </button>
+          <AnimatePresence>
+            {showDatePicker && (
+              <CalendarPicker
+                value={dueDate}
+                onChange={(date) => setDueDate(date)}
+                onClose={() => setShowDatePicker(false)}
+                triggerRef={dateButtonRef}
+              />
+            )}
+          </AnimatePresence>
+        </div>
         {dueDate && (
           <button
             type="button"
@@ -141,7 +142,7 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
             ×
           </button>
         )}
-        <button type="submit" className="task-input-btn" disabled={!text.trim()}>
+        <button type="submit" className="btn-primary add-task-btn" disabled={!text.trim()}>
           Add
         </button>
       </div>

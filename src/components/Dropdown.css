@@ -16,7 +16,9 @@
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: border-color var(--duration-fast) var(--ease-default),
+  transition: background var(--duration-smooth) var(--ease-default),
+              color var(--duration-smooth) var(--ease-default),
+              border-color var(--duration-smooth) var(--ease-default),
               box-shadow var(--duration-fast) var(--ease-default);
 }
 
@@ -102,6 +104,10 @@
   background: var(--bg-surface);
   color: var(--text-secondary);
   max-width: 130px;
+  transition: background var(--duration-smooth) var(--ease-default),
+              color var(--duration-smooth) var(--ease-default),
+              border-color var(--duration-smooth) var(--ease-default),
+              box-shadow var(--duration-fast) var(--ease-default);
 }
 
 .dropdown.compact .dropdown-trigger:hover {

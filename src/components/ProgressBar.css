@@ -12,10 +12,12 @@
   font-style: italic;
   color: var(--text-muted);
   letter-spacing: 0.02em;
+  transition: color var(--duration-smooth) var(--ease-default);
 }
 
 .progress-percent {
   color: var(--accent-warm);
+  transition: color var(--duration-smooth) var(--ease-default);
 }
 
 .progress-track {
@@ -31,13 +33,4 @@
   border-radius: var(--radius-full);
   background: var(--accent-warm);
   min-width: 0;
-}
-
-.progress-empty {
-  font-family: var(--font-body);
-  font-size: var(--text-sm);
-  font-style: italic;
-  color: var(--text-muted);
-  text-align: center;
-  padding: var(--space-3) 0;
 }

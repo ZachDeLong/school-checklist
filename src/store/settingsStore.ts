@@ -12,7 +12,7 @@ type Theme = 'light' | 'dark'
 
 const STORAGE_KEY = 'school-checklist-settings'
 
-function getStoredSettings(): { theme: Theme; timeframeDays: number; canvasInstances: CanvasInstance[] } {
+function getStoredSettings(): { theme: Theme; timeframeDays: number; canvasInstances: CanvasInstance[]; soundEnabled: boolean; confettiEnabled: boolean } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
@@ -21,10 +21,12 @@ function getStoredSettings(): { theme: Theme; timeframeDays: number; canvasInsta
         theme: parsed.state?.theme || 'dark',
         timeframeDays: parsed.state?.timeframeDays || 7,
         canvasInstances: parsed.state?.canvasInstances || [],
+        soundEnabled: parsed.state?.soundEnabled ?? true,
+        confettiEnabled: parsed.state?.confettiEnabled ?? true,
       }
     }
   } catch {}
-  return { theme: 'dark', timeframeDays: 7, canvasInstances: [] }
+  return { theme: 'dark', timeframeDays: 7, canvasInstances: [], soundEnabled: true, confettiEnabled: true }
 }
 
 const stored = getStoredSettings()
@@ -33,11 +35,15 @@ interface SettingsState {
   canvasInstances: CanvasInstance[]
   theme: Theme
   timeframeDays: number
+  soundEnabled: boolean
+  confettiEnabled: boolean
   addCanvasInstance: (name: string, url: string, token: string) => void
   updateCanvasInstance: (id: string, updates: Partial<Omit<CanvasInstance, 'id'>>) => void
   removeCanvasInstance: (id: string) => void
   setTheme: (theme: Theme) => void
   setTimeframeDays: (days: number) => void
+  setSoundEnabled: (enabled: boolean) => void
+  setConfettiEnabled: (enabled: boolean) => void
   isConfigured: () => boolean
   // Legacy getters for backwards compatibility
   canvasToken: string
@@ -50,6 +56,8 @@ export const useSettingsStore = create<SettingsState>()(
       canvasInstances: stored.canvasInstances,
       theme: stored.theme,
       timeframeDays: stored.timeframeDays,
+      soundEnabled: stored.soundEnabled,
+      confettiEnabled: stored.confettiEnabled,
 
       addCanvasInstance: (name, url, token) => {
         const instance: CanvasInstance = {
@@ -87,6 +95,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       setTheme: (theme) => set({ theme }),
       setTimeframeDays: (days) => set({ timeframeDays: days }),
+      setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
+      setConfettiEnabled: (enabled) => set({ confettiEnabled: enabled }),
 
       isConfigured: () => {
         const { canvasInstances } = get()
@@ -109,6 +119,8 @@ export const useSettingsStore = create<SettingsState>()(
         canvasInstances: state.canvasInstances,
         theme: state.theme,
         timeframeDays: state.timeframeDays,
+        soundEnabled: state.soundEnabled,
+        confettiEnabled: state.confettiEnabled,
       }),
       onRehydrateStorage: () => {
         return (state) => {

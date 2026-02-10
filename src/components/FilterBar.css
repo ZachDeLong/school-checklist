@@ -1,12 +1,13 @@
 .filter-bar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-3);
 }
 
 .filter-chips {
   display: flex;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .filter-chip {
@@ -21,7 +22,9 @@
   color: var(--text-muted);
   border-radius: var(--radius-full);
   cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-default);
+  transition: background var(--duration-smooth) var(--ease-default),
+              color var(--duration-smooth) var(--ease-default),
+              border-color var(--duration-smooth) var(--ease-default);
 }
 
 .filter-chip:hover {
@@ -35,17 +38,12 @@
   color: var(--bg-deep);
 }
 
-.filter-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
 .search-wrapper {
   flex: 1;
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .search-icon {
@@ -64,10 +62,10 @@
   padding: var(--space-2) var(--space-3);
   padding-left: calc(var(--space-3) + 14px + var(--space-2));
   padding-right: var(--space-8);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   background: var(--bg-surface);
   color: var(--text-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   outline: none;
   transition: background var(--duration-smooth) var(--ease-default),
               color var(--duration-smooth) var(--ease-default),
@@ -80,7 +78,7 @@
 }
 
 .search-input:focus {
-  border-color: var(--border-focus);
+  border-color: var(--accent-warm-dim);
   box-shadow: 0 0 0 3px var(--accent-warm-glow);
 }
 
@@ -117,10 +115,33 @@
 }
 
 .hide-completed-toggle input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
   width: 14px;
   height: 14px;
-  accent-color: var(--accent-warm);
+  border: 1.5px solid var(--text-muted);
+  border-radius: 3px;
+  background: transparent;
   cursor: pointer;
+  position: relative;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.hide-completed-toggle input[type="checkbox"]:checked {
+  background: var(--accent-warm);
+  border-color: var(--accent-warm);
+}
+
+.hide-completed-toggle input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.5px;
+  width: 5px;
+  height: 8px;
+  border: solid var(--bg-deep);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
 }
 
 .toggle-label {
@@ -128,15 +149,16 @@
   font-size: var(--text-xs);
   color: var(--text-muted);
   white-space: nowrap;
+  transition: color var(--duration-smooth) var(--ease-default);
 }
 
 @media (max-width: 480px) {
-  .filter-row {
-    flex-direction: column;
-    align-items: stretch;
+  .filter-bar {
+    flex-wrap: wrap;
   }
 
-  .hide-completed-toggle {
-    justify-content: flex-end;
+  .search-wrapper {
+    order: 3;
+    flex-basis: 100%;
   }
 }

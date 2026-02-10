@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { playCheckSound, playUncheckSound } from '../utils/sounds';
 import { formatDueDate, getDueStatus } from '../utils/dateUtils';
 import { useTaskStore } from '../store/taskStore';
+import { useSettingsStore } from '../store/settingsStore';
 import type { Task } from '../schemas/task';
 import './TaskItem.css';
 
@@ -14,6 +15,7 @@ interface TaskItemProps {
 function TaskItem({ task, onToggle }: TaskItemProps) {
   const setCourseAlias = useTaskStore((state) => state.setCourseAlias);
   const deleteTask = useTaskStore((state) => state.deleteTask);
+  const soundEnabled = useSettingsStore((state) => state.soundEnabled);
   const displayCourseName = useTaskStore(
     (state) => state.courseAliases[task.courseName] || task.courseName
   );
@@ -33,10 +35,12 @@ function TaskItem({ task, onToggle }: TaskItemProps) {
   }, [isEditingCourse]);
 
   function handleToggle() {
-    if (!task.completed) {
-      playCheckSound();
-    } else {
-      playUncheckSound();
+    if (soundEnabled) {
+      if (!task.completed) {
+        playCheckSound();
+      } else {
+        playUncheckSound();
+      }
     }
     onToggle(task.id);
   }

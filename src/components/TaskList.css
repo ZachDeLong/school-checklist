@@ -3,4 +3,6 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  transition: background var(--duration-smooth) var(--ease-default),
+              border-color var(--duration-smooth) var(--ease-default);
 }

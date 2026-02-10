@@ -9,7 +9,7 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { canvasInstances, addCanvasInstance, updateCanvasInstance, removeCanvasInstance, timeframeDays, setTimeframeDays } = useSettingsStore()
+  const { canvasInstances, addCanvasInstance, updateCanvasInstance, removeCanvasInstance, timeframeDays, setTimeframeDays, soundEnabled, setSoundEnabled, confettiEnabled, setConfettiEnabled } = useSettingsStore()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
 
@@ -201,17 +201,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
 
               <div className="form-actions">
-                <button
-                  className="settings-btn settings-btn-secondary"
-                  onClick={resetForm}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="settings-btn settings-btn-primary"
-                  onClick={handleSave}
-                  disabled={!name.trim() || !url.trim() || !token.trim()}
-                >
+                <button type="button" className="btn-ghost" onClick={resetForm}>Cancel</button>
+                <button type="button" className="btn-primary" disabled={!name.trim() || !url.trim() || !token.trim()} onClick={handleSave}>
                   {isAdding ? 'Add School' : 'Save Changes'}
                 </button>
               </div>
@@ -221,8 +212,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           {/* Add button */}
           {!isAdding && !editingId && (
-            <button className="add-instance-btn" onClick={handleAdd}>
-              <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+            <button type="button" className="btn-outline" onClick={handleAdd}>
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
                 <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
               Add School
@@ -254,15 +245,36 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
             <p className="settings-hint">Tasks due within this many days appear in the highlighted section (1–120)</p>
           </div>
+
+          <div className="settings-toggle-row">
+            <label className="settings-label" htmlFor="toggle-sound">Sound effects</label>
+            <button
+              id="toggle-sound"
+              role="switch"
+              aria-checked={soundEnabled}
+              className={`toggle-switch ${soundEnabled ? 'active' : ''}`}
+              onClick={() => setSoundEnabled(!soundEnabled)}
+            >
+              <span className="toggle-slider" />
+            </button>
+          </div>
+
+          <div className="settings-toggle-row">
+            <label className="settings-label" htmlFor="toggle-confetti">Confetti</label>
+            <button
+              id="toggle-confetti"
+              role="switch"
+              aria-checked={confettiEnabled}
+              className={`toggle-switch ${confettiEnabled ? 'active' : ''}`}
+              onClick={() => setConfettiEnabled(!confettiEnabled)}
+            >
+              <span className="toggle-slider" />
+            </button>
+          </div>
         </div>
 
         <div className="settings-footer">
-          <button
-            className="settings-btn settings-btn-secondary"
-            onClick={handleClose}
-          >
-            Done
-          </button>
+          <button type="button" className="btn-ghost" onClick={handleClose}>Done</button>
         </div>
       </motion.div>
     </motion.div>

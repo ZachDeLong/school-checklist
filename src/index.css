@@ -1,1 +1,4 @@
-/* Reset handled in App.css */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+@custom-variant dark (&:is([data-theme="dark"], [data-theme="dark"] *));

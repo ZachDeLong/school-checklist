@@ -1,10 +1,11 @@
 .task-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border-subtle);
-  transition: background var(--duration-fast) var(--ease-default);
+  transition: background var(--duration-smooth) var(--ease-default),
+              border-color var(--duration-smooth) var(--ease-default);
 }
 
 .task-item:hover {
@@ -19,6 +20,7 @@
   flex-shrink: 0;
   width: 18px;
   height: 18px;
+  margin-top: 2px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg-surface);
@@ -27,7 +29,10 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: all var(--duration-fast) var(--ease-default);
+  transition: background var(--duration-smooth) var(--ease-default),
+              border-color var(--duration-smooth) var(--ease-default),
+              box-shadow var(--duration-fast) var(--ease-default),
+              transform var(--duration-fast) var(--ease-default);
 }
 
 .task-checkbox:hover {
@@ -94,19 +99,6 @@
   transform-origin: left center;
 }
 
-.task-edit-input {
-  flex: 1;
-  font-family: var(--font-body);
-  font-size: var(--text-base);
-  color: var(--text-primary);
-  background: var(--bg-deep);
-  border: 1px solid var(--border-focus);
-  border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-2);
-  outline: none;
-  box-shadow: 0 0 0 3px var(--accent-warm-glow);
-}
-
 .task-delete {
   flex-shrink: 0;
   width: 28px;
@@ -135,9 +127,10 @@
 
 .task-meta {
   display: flex;
+  align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-1);
-  font-size: var(--text-sm, 0.875rem);
+  margin-top: 1px;
+  font-size: var(--text-xs);
 }
 
 .task-course {
@@ -146,6 +139,7 @@
   border: none;
   padding: 0;
   font: inherit;
+  transition: color var(--duration-smooth) var(--ease-default);
 }
 
 .task-course-editable {
@@ -178,20 +172,21 @@
 }
 
 .task-due {
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
+  transition: color var(--duration-smooth) var(--ease-default);
 }
 
 .task-due.due-today {
-  color: var(--warning, #e6a23c);
+  color: var(--accent-warm);
   font-weight: 500;
 }
 
 .task-due.due-soon {
-  color: var(--accent-warm, #d4a456);
+  color: var(--accent-warm-dim);
 }
 
 .task-due.overdue {
-  color: var(--error, #e57373);
+  color: var(--error);
   font-weight: 500;
 }
 

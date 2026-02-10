@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 function canvasProxyPlugin(): Plugin {
@@ -42,5 +43,5 @@ function canvasProxyPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), canvasProxyPlugin()],
+  plugins: [tailwindcss(), react(), canvasProxyPlugin()],
 })
