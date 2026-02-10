@@ -42,7 +42,9 @@ export default async function handler(req) {
   const canvasUrl = `https://${canvasHost}/api/v1/${canvasPath}${queryString}`
 
   try {
-    const headers = {}
+    const headers = {
+      'Accept': 'application/json',
+    }
     const authHeader = req.headers.get('authorization')
     if (authHeader) {
       headers['Authorization'] = authHeader
@@ -55,12 +57,20 @@ export default async function handler(req) {
 
     const data = await canvasRes.text()
 
+    const responseHeaders = {
+      'Content-Type': canvasRes.headers.get('content-type') || 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    }
+
+    // Forward Link header for pagination
+    const linkHeader = canvasRes.headers.get('link')
+    if (linkHeader) {
+      responseHeaders['Link'] = linkHeader
+    }
+
     return new Response(data, {
       status: canvasRes.status,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
+      headers: responseHeaders,
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Failed to reach Canvas API' }), {

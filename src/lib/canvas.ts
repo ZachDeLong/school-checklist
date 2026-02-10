@@ -2,20 +2,15 @@ import { z } from 'zod'
 import { toLocalDateString } from '../utils/dateUtils'
 import { useSettingsStore, type CanvasInstance } from '../store/settingsStore'
 
-const CalendarEventSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  all_day_date: z.string().nullable().optional(),
-  start_at: z.string().nullable().optional(),
-  end_at: z.string().nullable().optional(),
-  context_name: z.string().optional(),
-})
-
-type CalendarEvent = z.infer<typeof CalendarEventSchema>
-
 const CourseSchema = z.object({
   id: z.number(),
   name: z.string(),
+})
+
+const AssignmentSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  due_at: z.string().nullable(),
 })
 
 export interface CanvasAssignment {
@@ -82,53 +77,59 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
   const startDate = toLocalDateString(today)
   const endDate = toLocalDateString(endDay)
 
-  // Fetch all courses with pagination
+  // Fetch all active courses with pagination
   const rawCourses = await fetchAllPages('/api/canvas/courses?enrollment_state=active&per_page=100', headers)
 
-  const courseIds = rawCourses
+  const courses = rawCourses
     .map((course) => {
       const parsed = CourseSchema.safeParse(course)
-      return parsed.success ? String(parsed.data.id) : null
+      return parsed.success ? parsed.data : null
     })
-    .filter((id): id is string => id !== null)
+    .filter((c): c is z.infer<typeof CourseSchema> => c !== null)
 
-  if (courseIds.length === 0) {
+  if (courses.length === 0) {
     return []
   }
 
-  // Build context_codes for calendar API
-  const contextCodes = courseIds.map(id => `course_${id}`).join('&context_codes[]=')
-
-  // Fetch all calendar events with pagination
-  const calendarUrl = `/api/canvas/calendar_events?type=assignment&start_date=${startDate}&end_date=${endDate}&context_codes[]=${contextCodes}&per_page=100`
-
-  const rawEvents = await fetchAllPages(calendarUrl, headers)
-
-  const events = rawEvents
-    .map((e) => {
-      const parsed = CalendarEventSchema.safeParse(e)
-      return parsed.success ? parsed.data : null
+  // Fetch assignments from each course in parallel
+  // Uses per-course endpoint instead of calendar_events (which some Canvas instances restrict)
+  const courseResults = await Promise.allSettled(
+    courses.map(async (course) => {
+      const url = `/api/canvas/courses/${course.id}/assignments?per_page=100&order_by=due_at`
+      const rawAssignments = await fetchAllPages(url, headers)
+      return { course, assignments: rawAssignments }
     })
-    .filter((e): e is CalendarEvent => e !== null)
+  )
 
-  // Transform to our format, prefixing ID with instance name to ensure uniqueness
-  return events.map((event) => {
-    // Get due date from all_day_date, start_at, or end_at
-    let dueDate = event.all_day_date || event.end_at || event.start_at || null
+  const allAssignments: CanvasAssignment[] = []
 
-    // Convert all_day_date to ISO format if needed
-    if (dueDate && !dueDate.includes('T')) {
-      dueDate = `${dueDate}T23:59:59Z`
+  for (const result of courseResults) {
+    if (result.status !== 'fulfilled') continue
+
+    const { course, assignments } = result.value
+
+    for (const raw of assignments) {
+      const parsed = AssignmentSchema.safeParse(raw)
+      if (!parsed.success) continue
+
+      const assignment = parsed.data
+      if (!assignment.due_at) continue
+
+      // Filter to assignments within the configured timeframe
+      const dueDateStr = toLocalDateString(new Date(assignment.due_at))
+      if (dueDateStr < startDate || dueDateStr > endDate) continue
+
+      allAssignments.push({
+        id: `${instance.id}:${assignment.id}`,
+        name: assignment.name,
+        due_at: assignment.due_at,
+        course_id: String(course.id),
+        course_name: course.name,
+      })
     }
+  }
 
-    return {
-      id: `${instance.id}:${event.id}`,
-      name: event.title,
-      due_at: dueDate,
-      course_id: event.context_name || 'Unknown',
-      course_name: event.context_name || 'Unknown Course',
-    }
-  })
+  return allAssignments
 }
 
 /**
