@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const TaskSchema = z.object({
+const TaskSchema = z.object({
   id: z.string(),
   title: z.string(),
   dueDate: z.string().nullable(),

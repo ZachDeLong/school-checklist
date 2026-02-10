@@ -159,19 +159,4 @@ describe('taskStore', () => {
     })
   })
 
-  describe('courseAliases', () => {
-    it('sets and retrieves course alias', () => {
-      const { setCourseAlias } = useTaskStore.getState()
-
-      setCourseAlias('Long Course Name', 'Short')
-
-      expect(useTaskStore.getState().getCourseDisplayName('Long Course Name')).toBe('Short')
-    })
-
-    it('returns original name if no alias exists', () => {
-      const { getCourseDisplayName } = useTaskStore.getState()
-
-      expect(getCourseDisplayName('No Alias')).toBe('No Alias')
-    })
-  })
 })

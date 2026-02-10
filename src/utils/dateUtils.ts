@@ -2,7 +2,7 @@
  * Parses a date string as a local date to avoid timezone issues.
  * Extracts the date portion (YYYY-MM-DD) and creates a Date object in local time.
  */
-export function parseLocalDate(dateStr: string): Date {
+function parseLocalDate(dateStr: string): Date {
   const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
   return new Date(year, month - 1, day);
 }
@@ -40,17 +40,6 @@ export function getDueStatus(dateStr: string | null): string {
   if (date.getTime() === today.getTime()) return 'due-today';
   if (date.getTime() === tomorrow.getTime()) return 'due-soon';
   return '';
-}
-
-/**
- * Checks if a date string represents today's date.
- */
-export function isToday(dateStr: string | null): boolean {
-  if (!dateStr) return false;
-  const date = parseLocalDate(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return date.getTime() === today.getTime();
 }
 
 /**
