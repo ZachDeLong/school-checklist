@@ -360,8 +360,11 @@
 }
 
 @media (max-width: 480px) {
+  .settings-backdrop {
+    padding: var(--space-2);
+  }
+
   .settings-modal {
     max-width: none;
-    margin: var(--space-4);
   }
 }
