@@ -1,11 +1,11 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
+import Dropdown, { type DropdownItem } from './Dropdown';
 import './FilterBar.css';
 
-export type SourceFilter = 'all' | 'canvas' | 'manual';
-
 interface FilterBarProps {
-  sourceFilter: SourceFilter;
-  setSourceFilter: (filter: SourceFilter) => void;
+  courseFilter: string;
+  setCourseFilter: (filter: string) => void;
+  courses: { value: string; label: string }[];
   hideCompleted: boolean;
   setHideCompleted: (hide: boolean) => void;
   searchQuery: string;
@@ -13,35 +13,30 @@ interface FilterBarProps {
 }
 
 function FilterBar({
-  sourceFilter,
-  setSourceFilter,
+  courseFilter,
+  setCourseFilter,
+  courses,
   hideCompleted,
   setHideCompleted,
   searchQuery,
   setSearchQuery,
 }: FilterBarProps) {
+  const dropdownOptions: DropdownItem[] = useMemo(() => [
+    { value: 'all', label: 'All' },
+    { value: 'school', label: 'School' },
+    { value: 'personal', label: 'Personal' },
+    ...(courses.length > 0 ? [{ separator: true as const }, ...courses] : []),
+  ], [courses]);
+
   return (
     <div className="filter-bar">
-      <div className="filter-chips">
-        <button
-          className={`filter-chip ${sourceFilter === 'all' ? 'active' : ''}`}
-          onClick={() => setSourceFilter('all')}
-        >
-          All
-        </button>
-        <button
-          className={`filter-chip ${sourceFilter === 'canvas' ? 'active' : ''}`}
-          onClick={() => setSourceFilter('canvas')}
-        >
-          Canvas
-        </button>
-        <button
-          className={`filter-chip ${sourceFilter === 'manual' ? 'active' : ''}`}
-          onClick={() => setSourceFilter('manual')}
-        >
-          Personal
-        </button>
-      </div>
+      <Dropdown
+        variant="compact"
+        value={courseFilter}
+        onChange={setCourseFilter}
+        options={dropdownOptions}
+        ariaLabel="Filter by course"
+      />
 
       <div className="search-wrapper">
         <svg viewBox="0 0 24 24" fill="none" className="search-icon">

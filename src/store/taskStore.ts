@@ -5,6 +5,11 @@ import type { Task } from '../schemas/task'
 
 export type { Task }
 
+export type DeleteStrategy =
+  | { type: 'keep' }
+  | { type: 'reassign'; target: string }
+  | { type: 'delete' }
+
 interface TaskStore {
   tasks: Task[]
   lastFetched: number | null
@@ -21,6 +26,8 @@ interface TaskStore {
   setCourseAlias: (original: string, alias: string) => void
   reorderTasks: (activeId: string, overId: string) => void
   addCustomCourse: (name: string) => void
+  renameCourse: (courseName: string, newDisplayName: string) => void
+  deleteCourse: (courseName: string, strategy: DeleteStrategy) => void
 }
 
 const STALE_THRESHOLD = 60 * 60 * 1000 // 1 hour
@@ -143,6 +150,67 @@ export const useTaskStore = create<TaskStore>()(
         const trimmed = name.trim()
         if (!trimmed || state.customCourses.includes(trimmed)) return state
         return { customCourses: [...state.customCourses, trimmed] }
+      }),
+
+      renameCourse: (courseName, newDisplayName) => set((state) => {
+        const trimmed = newDisplayName.trim()
+        if (!trimmed || trimmed === 'Personal') return state
+
+        const hasCanvasTasks = state.tasks.some(
+          t => t.source === 'canvas' && t.courseName === courseName
+        )
+
+        if (hasCanvasTasks) {
+          // Canvas or mixed: use alias
+          return {
+            courseAliases: { ...state.courseAliases, [courseName]: trimmed }
+          }
+        }
+
+        // Manual-only: rename directly on tasks and in customCourses
+        return {
+          tasks: state.tasks.map(t =>
+            t.courseName === courseName ? { ...t, courseName: trimmed } : t
+          ),
+          customCourses: state.customCourses.map(c =>
+            c === courseName ? trimmed : c
+          ),
+        }
+      }),
+
+      deleteCourse: (courseName, strategy) => set((state) => {
+        let tasks = state.tasks
+        let customOrder = state.customOrder
+
+        switch (strategy.type) {
+          case 'keep':
+            tasks = tasks.map(t =>
+              t.courseName === courseName ? { ...t, courseName: 'Personal' } : t
+            )
+            break
+          case 'reassign':
+            tasks = tasks.map(t =>
+              t.courseName === courseName ? { ...t, courseName: strategy.target } : t
+            )
+            break
+          case 'delete': {
+            const deletedIds = new Set(
+              tasks.filter(t => t.courseName === courseName).map(t => t.id)
+            )
+            tasks = tasks.filter(t => t.courseName !== courseName)
+            customOrder = customOrder.filter(id => !deletedIds.has(id))
+            break
+          }
+        }
+
+        const { [courseName]: _, ...remainingAliases } = state.courseAliases
+
+        return {
+          tasks,
+          customOrder,
+          customCourses: state.customCourses.filter(c => c !== courseName),
+          courseAliases: remainingAliases,
+        }
       }),
     }),
     { name: 'school-checklist-tasks' }

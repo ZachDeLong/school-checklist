@@ -7,7 +7,7 @@ A task manager that syncs with Canvas LMS to automatically pull in your upcoming
 - Auto-syncs assignments from Canvas (today through 7 days out)
 - Support for multiple schools/Canvas instances
 - Manual sync button to force refresh
-- Filter tasks by source (All / Canvas / Personal) and search by title
+- Filter tasks by category (All / School / Personal) or individual course, and search by title
 - Hide completed tasks toggle
 - Add manual tasks with optional due dates
 - Drag-and-drop reordering

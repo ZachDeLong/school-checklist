@@ -1,25 +1,28 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import './Dropdown.css'
 
-interface DropdownOption {
+export interface DropdownOption {
   value: string
   label: string
 }
 
+export type DropdownItem = DropdownOption | { separator: true }
+
 interface DropdownProps {
-  options: DropdownOption[]
+  options: DropdownItem[]
   value: string
   onChange: (value: string) => void
   ariaLabel?: string
   variant?: 'default' | 'compact'
+  renderItemSuffix?: (option: DropdownOption) => ReactNode
 }
 
-export default function Dropdown({ options, value, onChange, ariaLabel, variant = 'default' }: DropdownProps) {
+export default function Dropdown({ options, value, onChange, ariaLabel, variant = 'default', renderItemSuffix }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  const selected = options.find(o => o.value === value)
+  const selected = options.find((o): o is DropdownOption => 'value' in o && o.value === value)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -73,25 +76,34 @@ export default function Dropdown({ options, value, onChange, ariaLabel, variant 
             exit={{ opacity: 0, y: -4, scaleY: 0.95 }}
             transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
           >
-            {options.map((opt) => (
-              <li key={opt.value} role="option" aria-selected={opt.value === value}>
-                <button
-                  type="button"
-                  className={`dropdown-item ${opt.value === value ? 'active' : ''}`}
-                  onClick={() => {
-                    onChange(opt.value)
-                    setOpen(false)
-                  }}
-                >
-                  {opt.label}
-                  {opt.value === value && (
-                    <svg viewBox="0 0 24 24" fill="none" className="dropdown-check">
-                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </button>
-              </li>
-            ))}
+            {options.map((opt, i) => {
+              if ('separator' in opt) {
+                return <li key={`sep-${i}`} className="dropdown-separator" role="separator" />
+              }
+              const suffix = renderItemSuffix?.(opt)
+              return (
+                <li key={opt.value} role="option" aria-selected={opt.value === value}>
+                  <button
+                    type="button"
+                    className={`dropdown-item ${opt.value === value ? 'active' : ''}`}
+                    onClick={() => {
+                      onChange(opt.value)
+                      setOpen(false)
+                    }}
+                  >
+                    <span className="dropdown-item-label">{opt.label}</span>
+                    <span className="dropdown-item-right">
+                      {suffix}
+                      {opt.value === value && (
+                        <svg viewBox="0 0 24 24" fill="none" className="dropdown-check">
+                          <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
           </motion.ul>
         )}
       </AnimatePresence>

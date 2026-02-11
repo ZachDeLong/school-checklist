@@ -5,14 +5,14 @@ import { useTaskStore } from './store/taskStore';
 import { useSettingsStore } from './store/settingsStore';
 import ProgressBar from './components/ProgressBar';
 import TaskInput from './components/TaskInput';
-import FilterBar, { type SourceFilter } from './components/FilterBar';
+import FilterBar from './components/FilterBar';
 import TaskList from './components/TaskList';
 import SettingsModal from './components/SettingsModal';
 import { playCelebrationSound } from './utils/sounds';
 import { isWithinDays } from './utils/dateUtils';
 
 function App() {
-  const { tasks, syncing, error, syncCanvas, toggleComplete, addManualTask, customOrder, customCourses, addCustomCourse } = useTaskStore();
+  const { tasks, syncing, error, syncCanvas, toggleComplete, addManualTask, customOrder, customCourses, addCustomCourse, courseAliases } = useTaskStore();
   const isConfigured = useSettingsStore((state) => state.isConfigured());
   const theme = useSettingsStore((state) => state.theme);
   const setTheme = useSettingsStore((state) => state.setTheme);
@@ -21,7 +21,7 @@ function App() {
   const confettiEnabled = useSettingsStore((state) => state.confettiEnabled);
   const prevAllDone = useRef(false);
 
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [courseFilter, setCourseFilter] = useState('all');
   const [hideCompleted, setHideCompleted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -47,9 +47,21 @@ function App() {
     return [...new Set([...canvasCourses, ...customCourses])].sort();
   }, [tasks, customCourses]);
 
+  const filterCourses = useMemo(() => {
+    return courses
+      .filter(c => c !== 'Personal')
+      .map(c => ({ value: c, label: courseAliases[c] || c }));
+  }, [courses, courseAliases]);
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
-      if (sourceFilter !== 'all' && task.source !== sourceFilter) return false;
+      if (courseFilter === 'personal') {
+        if (task.courseName !== 'Personal') return false;
+      } else if (courseFilter === 'school') {
+        if (task.courseName === 'Personal') return false;
+      } else if (courseFilter !== 'all') {
+        if (task.courseName !== courseFilter) return false;
+      }
       if (hideCompleted && task.completed) return false;
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -59,7 +71,7 @@ function App() {
       }
       return true;
     });
-  }, [tasks, sourceFilter, hideCompleted, searchQuery]);
+  }, [tasks, courseFilter, hideCompleted, searchQuery]);
 
   const sortedTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
@@ -214,8 +226,9 @@ function App() {
       <ProgressBar completedCount={completedCount} totalCount={totalCount} />
       <TaskInput onAddTask={handleAddTask} courses={courses} onAddCourse={addCustomCourse} />
       <FilterBar
-        sourceFilter={sourceFilter}
-        setSourceFilter={setSourceFilter}
+        courseFilter={courseFilter}
+        setCourseFilter={setCourseFilter}
+        courses={filterCourses}
         hideCompleted={hideCompleted}
         setHideCompleted={setHideCompleted}
         searchQuery={searchQuery}
