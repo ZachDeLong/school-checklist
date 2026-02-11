@@ -9,7 +9,6 @@ interface CourseOption {
 }
 
 interface DeleteCourseDialogProps {
-  courseName: string
   displayName: string
   taskCount: number
   availableCourses: CourseOption[]
@@ -18,7 +17,6 @@ interface DeleteCourseDialogProps {
 }
 
 export default function DeleteCourseDialog({
-  courseName,
   displayName,
   taskCount,
   availableCourses,

@@ -72,7 +72,7 @@ export default async function handler(req) {
       status: canvasRes.status,
       headers: responseHeaders,
     })
-  } catch (error) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Failed to reach Canvas API' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

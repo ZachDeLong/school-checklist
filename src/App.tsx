@@ -30,7 +30,7 @@ function App() {
     if (isConfigured) {
       syncCanvas(true);
     }
-  }, [isConfigured]);
+  }, [isConfigured, syncCanvas]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);

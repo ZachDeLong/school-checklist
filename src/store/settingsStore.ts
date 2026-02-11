@@ -25,7 +25,7 @@ function getStoredSettings(): { theme: Theme; timeframeDays: number; canvasInsta
         confettiEnabled: parsed.state?.confettiEnabled ?? true,
       }
     }
-  } catch {}
+  } catch { /* ignore invalid stored settings */ }
   return { theme: 'dark', timeframeDays: 7, canvasInstances: [], soundEnabled: true, confettiEnabled: true }
 }
 

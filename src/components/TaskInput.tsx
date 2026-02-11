@@ -346,7 +346,6 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
       <AnimatePresence>
         {deletingCourse && (
           <DeleteCourseDialog
-            courseName={deletingCourse}
             displayName={getDisplayName(deletingCourse)}
             taskCount={deletingTaskCount}
             availableCourses={filteredAvailableCourses}

@@ -33,7 +33,7 @@ function canvasProxyPlugin(): Plugin {
           res.statusCode = canvasRes.status
           res.setHeader('Content-Type', 'application/json')
           res.end(data)
-        } catch (error) {
+        } catch {
           res.statusCode = 500
           res.end(JSON.stringify({ error: 'Failed to reach Canvas API' }))
         }
