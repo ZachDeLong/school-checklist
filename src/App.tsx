@@ -19,12 +19,17 @@ function App() {
   const timeframeDays = useSettingsStore((state) => state.timeframeDays);
   const soundEnabled = useSettingsStore((state) => state.soundEnabled);
   const confettiEnabled = useSettingsStore((state) => state.confettiEnabled);
+  const setupPromptDismissed = useSettingsStore((state) => state.setupPromptDismissed);
+  const setSetupPromptDismissed = useSettingsStore((state) => state.setSetupPromptDismissed);
+  const minimalMode = useSettingsStore((state) => state.minimalMode);
+  const setMinimalMode = useSettingsStore((state) => state.setMinimalMode);
   const prevAllDone = useRef(false);
 
   const [courseFilter, setCourseFilter] = useState('all');
   const [hideCompleted, setHideCompleted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pendingRemoval, setPendingRemoval] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isConfigured) {
@@ -63,6 +68,7 @@ function App() {
         if (task.courseName !== courseFilter) return false;
       }
       if (hideCompleted && task.completed) return false;
+      if (minimalMode && task.completed && !pendingRemoval.has(task.id)) return false;
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const titleMatch = task.title.toLowerCase().includes(query);
@@ -71,7 +77,7 @@ function App() {
       }
       return true;
     });
-  }, [tasks, courseFilter, hideCompleted, searchQuery]);
+  }, [tasks, courseFilter, hideCompleted, searchQuery, minimalMode, pendingRemoval]);
 
   const sortedTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
@@ -126,6 +132,21 @@ function App() {
     prevAllDone.current = allDone;
   }, [allDone, confettiEnabled, soundEnabled]);
 
+  const handleToggle = useCallback((id: string) => {
+    const task = tasks.find(t => t.id === id);
+    toggleComplete(id);
+    if (minimalMode && task && !task.completed) {
+      setPendingRemoval(prev => new Set(prev).add(id));
+      setTimeout(() => {
+        setPendingRemoval(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }, 600);
+    }
+  }, [toggleComplete, tasks, minimalMode]);
+
   const handleAddTask = useCallback((text: string, dueDate: string | null, courseName: string) => {
     addManualTask(text, dueDate, courseName);
   }, [addManualTask]);
@@ -135,105 +156,155 @@ function App() {
       <header className="app-header">
         <h1 className="app-title">my checklist</h1>
         <div className="header-actions">
+          <AnimatePresence initial={false}>
+            {minimalMode && totalCount > 0 && (
+              <motion.span
+                key="count"
+                className="minimal-count"
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 8 }}
+                transition={{ duration: 0.2 }}
+              >
+                {completedCount}/{totalCount}
+              </motion.span>
+            )}
+          </AnimatePresence>
           <button
-            className={`sync-btn ${syncing ? 'syncing' : ''}`}
-            onClick={() => syncCanvas(true)}
-            disabled={syncing || !isConfigured}
-            aria-label="Sync with Canvas"
+            className={`minimal-toggle-btn ${minimalMode ? 'active' : ''}`}
+            onClick={() => setMinimalMode(!minimalMode)}
+            aria-label={minimalMode ? 'Exit minimal mode' : 'Enter minimal mode'}
+            title={minimalMode ? 'Exit minimal mode' : 'Minimal mode'}
           >
-            <svg viewBox="0 0 24 24" fill="none" className="sync-icon">
-              <path
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            {minimalMode ? (
+              <svg viewBox="0 0 24 24" fill="none" className="minimal-icon">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" className="minimal-icon">
+                <path d="M4 14h6v6M14 4h6v6M20 4l-7 7M4 20l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
           </button>
-          <button
-            className="theme-toggle-btn"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              {theme === 'dark' ? (
-                <motion.svg
-                  key="sun"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="theme-icon"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </motion.svg>
-              ) : (
-                <motion.svg
-                  key="moon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="theme-icon"
-                  initial={{ rotate: 90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </motion.svg>
-              )}
-            </AnimatePresence>
-          </button>
-          <button
-            className="settings-btn"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-          >
-            <svg viewBox="0 0 24 24" fill="none" className="settings-icon">
-              <path
-                d="M12 15a3 3 0 100-6 3 3 0 000 6z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          {!minimalMode && (
+            <div className="header-actions-extra">
+              <button
+                className={`sync-btn ${syncing ? 'syncing' : ''}`}
+                onClick={() => syncCanvas(true)}
+                disabled={syncing || !isConfigured}
+                aria-label="Sync with Canvas"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="sync-icon">
+                  <path
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <button
+                className="theme-toggle-btn"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  {theme === 'dark' ? (
+                    <motion.svg
+                      key="sun"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="theme-icon"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/>
+                      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </motion.svg>
+                  ) : (
+                    <motion.svg
+                      key="moon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      className="theme-icon"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </motion.svg>
+                  )}
+                </AnimatePresence>
+              </button>
+              <button
+                className="settings-btn"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Settings"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="settings-icon">
+                  <path
+                    d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </header>
-      {!isConfigured && (
-        <div className="setup-prompt" onClick={() => setSettingsOpen(true)}>
-          <span className="setup-prompt-icon">
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-              <path d="M12 9v4m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      {!minimalMode && !isConfigured && !setupPromptDismissed && (
+        <div className="setup-prompt">
+          <div className="setup-prompt-content" onClick={() => setSettingsOpen(true)}>
+            <span className="setup-prompt-icon">
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+                <path d="M12 9v4m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </span>
+            <span>Configure Canvas to sync your assignments</span>
+          </div>
+          <button
+            className="setup-prompt-close"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSetupPromptDismissed(true);
+            }}
+            aria-label="Dismiss"
+          >
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-          </span>
-          <span>Configure Canvas to sync your assignments</span>
+          </button>
         </div>
       )}
       {syncing && <div className="sync-status">Syncing with Canvas...</div>}
       {error && <div className="sync-error">{error}</div>}
-      <ProgressBar completedCount={completedCount} totalCount={totalCount} />
-      <TaskInput onAddTask={handleAddTask} courses={courses} onAddCourse={addCustomCourse} />
-      <FilterBar
-        courseFilter={courseFilter}
-        setCourseFilter={setCourseFilter}
-        courses={filterCourses}
-        hideCompleted={hideCompleted}
-        setHideCompleted={setHideCompleted}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-      />
+      {!minimalMode && <ProgressBar completedCount={completedCount} totalCount={totalCount} />}
+      <TaskInput onAddTask={handleAddTask} courses={courses} onAddCourse={addCustomCourse} minimal={minimalMode} />
+      {!minimalMode && (
+        <FilterBar
+          courseFilter={courseFilter}
+          setCourseFilter={setCourseFilter}
+          courses={filterCourses}
+          hideCompleted={hideCompleted}
+          setHideCompleted={setHideCompleted}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
+      )}
       <AnimatePresence>
         {upcomingTasks.length > 0 && (
           <motion.section
@@ -247,15 +318,15 @@ function App() {
               {upcomingLabel}
               <span className="due-today-count">{upcomingTasks.length}</span>
             </h2>
-            <TaskList tasks={upcomingTasks} onToggle={toggleComplete} />
+            <TaskList tasks={upcomingTasks} onToggle={handleToggle} />
           </motion.section>
         )}
       </AnimatePresence>
       {otherTasks.length > 0 && (
-        <TaskList tasks={otherTasks} onToggle={toggleComplete} />
+        <TaskList tasks={otherTasks} onToggle={handleToggle} />
       )}
       {upcomingTasks.length === 0 && otherTasks.length === 0 && (
-        <TaskList tasks={[]} onToggle={toggleComplete} />
+        <TaskList tasks={[]} onToggle={handleToggle} />
       )}
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>

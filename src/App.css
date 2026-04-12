@@ -177,6 +177,7 @@ body {
 .sync-btn,
 .settings-btn,
 .theme-toggle-btn,
+.minimal-toggle-btn,
 .setup-prompt,
 .due-today-section,
 .due-today-header,
@@ -327,23 +328,100 @@ body::before {
   height: 18px;
 }
 
+/* Minimal mode toggle */
+.minimal-toggle-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.minimal-toggle-btn:hover {
+  border-color: var(--accent-warm-dim);
+  color: var(--accent-warm);
+  box-shadow: 0 0 10px var(--accent-warm-glow);
+}
+
+.minimal-toggle-btn.active {
+  border-color: var(--accent-warm-dim);
+  color: var(--accent-warm);
+  background: var(--accent-warm-glow);
+}
+
+.minimal-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Compact task count for minimal mode */
+.minimal-count {
+  font-family: var(--font-helvetica);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Animated wrapper for extra header buttons */
+.header-actions-extra {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+
 .setup-prompt {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   background: var(--accent-warm-glow);
   border: 1px solid var(--accent-warm-dim);
   border-radius: var(--radius-md);
   color: var(--accent-warm);
   font-size: var(--text-sm);
-  cursor: pointer;
   transition: all var(--duration-fast) var(--ease-default);
 }
 
-.setup-prompt:hover {
+.setup-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  cursor: pointer;
+}
+
+.setup-prompt-content:hover {
+  opacity: 0.85;
+}
+
+.setup-prompt-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--accent-warm-dim);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.setup-prompt-close:hover {
+  color: var(--accent-warm);
   background: var(--accent-warm-strong);
-  box-shadow: 0 0 15px var(--accent-warm-glow);
 }
 
 .setup-prompt-icon {
@@ -412,14 +490,16 @@ body::before {
 
   .sync-btn,
   .settings-btn,
-  .theme-toggle-btn {
+  .theme-toggle-btn,
+  .minimal-toggle-btn {
     width: 32px;
     height: 32px;
   }
 
   .sync-icon,
   .settings-icon,
-  .theme-icon {
+  .theme-icon,
+  .minimal-icon {
     width: 16px;
     height: 16px;
   }

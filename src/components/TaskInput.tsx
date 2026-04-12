@@ -11,9 +11,10 @@ interface TaskInputProps {
   onAddTask: (text: string, dueDate: string | null, courseName: string) => void;
   courses?: string[];
   onAddCourse?: (name: string) => void;
+  minimal?: boolean;
 }
 
-export default function TaskInput({ onAddTask, courses = [], onAddCourse }: TaskInputProps) {
+export default function TaskInput({ onAddTask, courses = [], onAddCourse, minimal = false }: TaskInputProps) {
   const [text, setText] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('Personal');
@@ -23,6 +24,7 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
   const [editingCourse, setEditingCourse] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [deletingCourse, setDeletingCourse] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const dateButtonRef = useRef<HTMLButtonElement>(null);
   const courseInputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +49,7 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
     setDueDate('');
     setSelectedCourse('Personal');
     setShowDatePicker(false);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function handleDateClick() {
@@ -245,98 +248,103 @@ export default function TaskInput({ onAddTask, courses = [], onAddCourse }: Task
 
   return (
     <>
-      <form className="task-input-form" onSubmit={handleSubmit}>
+      <form className={`task-input-form${minimal ? ' task-input-minimal' : ''}`} onSubmit={handleSubmit}>
         <input
+          ref={inputRef}
           type="text"
           className="task-input"
-          placeholder="What do you need to do?"
+          placeholder={minimal ? 'Add a task...' : 'What do you need to do?'}
           value={text}
           onChange={(e) => setText(e.target.value)}
           autoFocus
         />
         <div className="task-input-actions">
-          {isAddingCourse ? (
-            <div className="course-input-wrapper">
-              <input
-                ref={courseInputRef}
-                type="text"
-                className="course-input"
-                placeholder="Course name"
-                value={newCourseName}
-                onChange={(e) => setNewCourseName(e.target.value)}
-                onBlur={handleAddCourse}
-                onKeyDown={handleCourseInputKeyDown}
-              />
-            </div>
-          ) : editingCourse ? (
-            <div className="course-input-wrapper">
-              <input
-                ref={editInputRef}
-                type="text"
-                className="course-input"
-                placeholder="Course name"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onBlur={confirmEdit}
-                onKeyDown={handleEditKeyDown}
-              />
-            </div>
-          ) : (
-            <Dropdown
-              variant="compact"
-              value={selectedCourse}
-              onChange={handleCourseChange}
-              ariaLabel="Select course"
-              renderItemSuffix={renderCourseSuffix}
-              options={[
-                { value: 'Personal', label: 'Personal' },
-                ...courses.map((c) => ({
-                  value: c,
-                  label: getDisplayName(c),
-                })),
-                { value: '__add_new__', label: '+ Add course...' },
-              ]}
-            />
-          )}
-          <div className="date-picker-wrapper">
-            <button
-              ref={dateButtonRef}
-              type="button"
-              className={`date-picker-btn ${dueDate ? 'has-date' : ''}`}
-              onClick={handleDateClick}
-              aria-label="Set due date"
-            >
-              {dueDate ? (
-                <span className="date-display">{formatDisplayDate(dueDate)}</span>
+          {!minimal && (
+            <>
+              {isAddingCourse ? (
+                <div className="course-input-wrapper">
+                  <input
+                    ref={courseInputRef}
+                    type="text"
+                    className="course-input"
+                    placeholder="Course name"
+                    value={newCourseName}
+                    onChange={(e) => setNewCourseName(e.target.value)}
+                    onBlur={handleAddCourse}
+                    onKeyDown={handleCourseInputKeyDown}
+                  />
+                </div>
+              ) : editingCourse ? (
+                <div className="course-input-wrapper">
+                  <input
+                    ref={editInputRef}
+                    type="text"
+                    className="course-input"
+                    placeholder="Course name"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onBlur={confirmEdit}
+                    onKeyDown={handleEditKeyDown}
+                  />
+                </div>
               ) : (
-                <svg viewBox="0 0 24 24" fill="none" className="calendar-icon">
-                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-              )}
-            </button>
-            <AnimatePresence>
-              {showDatePicker && (
-                <CalendarPicker
-                  value={dueDate}
-                  onChange={(date) => setDueDate(date)}
-                  onClose={() => setShowDatePicker(false)}
-                  triggerRef={dateButtonRef}
+                <Dropdown
+                  variant="compact"
+                  value={selectedCourse}
+                  onChange={handleCourseChange}
+                  ariaLabel="Select course"
+                  renderItemSuffix={renderCourseSuffix}
+                  options={[
+                    { value: 'Personal', label: 'Personal' },
+                    ...courses.map((c) => ({
+                      value: c,
+                      label: getDisplayName(c),
+                    })),
+                    { value: '__add_new__', label: '+ Add course...' },
+                  ]}
                 />
               )}
-            </AnimatePresence>
-          </div>
-          {dueDate && (
-            <button
-              type="button"
-              className="clear-date-btn"
-              onClick={() => setDueDate('')}
-              aria-label="Clear due date"
-            >
-              ×
-            </button>
+              <div className="date-picker-wrapper">
+                <button
+                  ref={dateButtonRef}
+                  type="button"
+                  className={`date-picker-btn ${dueDate ? 'has-date' : ''}`}
+                  onClick={handleDateClick}
+                  aria-label="Set due date"
+                >
+                  {dueDate ? (
+                    <span className="date-display">{formatDisplayDate(dueDate)}</span>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" className="calendar-icon">
+                      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                  )}
+                </button>
+                <AnimatePresence>
+                  {showDatePicker && (
+                    <CalendarPicker
+                      value={dueDate}
+                      onChange={(date) => setDueDate(date)}
+                      onClose={() => setShowDatePicker(false)}
+                      triggerRef={dateButtonRef}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+              {dueDate && (
+                <button
+                  type="button"
+                  className="clear-date-btn"
+                  onClick={() => setDueDate('')}
+                  aria-label="Clear due date"
+                >
+                  ×
+                </button>
+              )}
+            </>
           )}
           <button type="submit" className="btn-primary add-task-btn" disabled={!text.trim()}>
             Add

@@ -127,6 +127,21 @@
   padding: var(--space-1) var(--space-3);
 }
 
+/* Minimal mode */
+.task-input-minimal {
+  border-color: transparent;
+  background: transparent;
+}
+
+.task-input-minimal:focus-within {
+  background: var(--bg-surface);
+  border-color: var(--border-focus);
+}
+
+.task-input-minimal .task-input {
+  font-size: var(--text-sm);
+}
+
 /* Course edit/delete action buttons in dropdown */
 .course-item-actions {
   display: flex;

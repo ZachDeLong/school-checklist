@@ -37,6 +37,8 @@ interface SettingsState {
   timeframeDays: number
   soundEnabled: boolean
   confettiEnabled: boolean
+  setupPromptDismissed: boolean
+  minimalMode: boolean
   addCanvasInstance: (name: string, url: string, token: string) => void
   updateCanvasInstance: (id: string, updates: Partial<Omit<CanvasInstance, 'id'>>) => void
   removeCanvasInstance: (id: string) => void
@@ -44,6 +46,8 @@ interface SettingsState {
   setTimeframeDays: (days: number) => void
   setSoundEnabled: (enabled: boolean) => void
   setConfettiEnabled: (enabled: boolean) => void
+  setSetupPromptDismissed: (dismissed: boolean) => void
+  setMinimalMode: (minimal: boolean) => void
   isConfigured: () => boolean
   // Legacy getters for backwards compatibility
   canvasToken: string
@@ -58,6 +62,8 @@ export const useSettingsStore = create<SettingsState>()(
       timeframeDays: stored.timeframeDays,
       soundEnabled: stored.soundEnabled,
       confettiEnabled: stored.confettiEnabled,
+      setupPromptDismissed: false,
+      minimalMode: false,
 
       addCanvasInstance: (name, url, token) => {
         const instance: CanvasInstance = {
@@ -97,6 +103,8 @@ export const useSettingsStore = create<SettingsState>()(
       setTimeframeDays: (days) => set({ timeframeDays: days }),
       setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
       setConfettiEnabled: (enabled) => set({ confettiEnabled: enabled }),
+      setSetupPromptDismissed: (dismissed) => set({ setupPromptDismissed: dismissed }),
+      setMinimalMode: (minimal) => set({ minimalMode: minimal }),
 
       isConfigured: () => {
         const { canvasInstances } = get()
@@ -121,6 +129,8 @@ export const useSettingsStore = create<SettingsState>()(
         timeframeDays: state.timeframeDays,
         soundEnabled: state.soundEnabled,
         confettiEnabled: state.confettiEnabled,
+        setupPromptDismissed: state.setupPromptDismissed,
+        minimalMode: state.minimalMode,
       }),
       onRehydrateStorage: () => {
         return (state) => {
