@@ -1,5 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { fetchAssignments } from '../lib/canvas'
 import { useTaskStore } from './taskStore'
+
+vi.mock('../lib/canvas', () => ({
+  fetchAssignments: vi.fn(),
+}))
 
 describe('taskStore', () => {
   beforeEach(() => {
@@ -13,6 +18,7 @@ describe('taskStore', () => {
       customOrder: [],
       customCourses: [],
     })
+    vi.mocked(fetchAssignments).mockReset()
   })
 
   describe('addManualTask', () => {
@@ -78,6 +84,62 @@ describe('taskStore', () => {
       const { tasks } = useTaskStore.getState()
       expect(tasks[0].completed).toBe(true)
       expect(tasks[1].completed).toBe(true)
+    })
+  })
+
+  describe('syncCanvas', () => {
+    it('preserves completion by assignment identity, not a shared title', async () => {
+      useTaskStore.setState({
+        tasks: [
+          {
+            id: 'canvas-school-a:101',
+            title: 'Final Project',
+            dueDate: '2025-02-10T12:00:00Z',
+            courseName: 'Course A',
+            source: 'canvas',
+            completed: true,
+          },
+          {
+            id: 'canvas-school-a:202',
+            title: 'Final Project',
+            dueDate: '2025-02-11T12:00:00Z',
+            courseName: 'Course B',
+            source: 'canvas',
+            completed: false,
+          },
+        ],
+      })
+      vi.mocked(fetchAssignments).mockResolvedValue([
+        {
+          id: 'school-a:101',
+          name: 'Renamed Final Project',
+          due_at: '2025-02-12T12:00:00Z',
+          course_id: '1',
+          course_name: 'Course A',
+        },
+        {
+          id: 'school-a:202',
+          name: 'Final Project',
+          due_at: '2025-02-13T12:00:00Z',
+          course_id: '2',
+          course_name: 'Course B',
+        },
+      ])
+
+      await useTaskStore.getState().syncCanvas(true)
+
+      expect(useTaskStore.getState().tasks).toEqual([
+        expect.objectContaining({
+          id: 'canvas-school-a:101',
+          title: 'Renamed Final Project',
+          completed: true,
+        }),
+        expect.objectContaining({
+          id: 'canvas-school-a:202',
+          title: 'Final Project',
+          completed: false,
+        }),
+      ])
     })
   })
 

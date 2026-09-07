@@ -68,14 +68,18 @@ export const useTaskStore = create<TaskStore>()(
           const { tasks: existingTasks } = get()
           const manualTasks = existingTasks.filter(t => t.source === 'manual')
 
-          // Check completion by assignment name (more stable than ID)
-          const completedNames = new Set(
-            existingTasks.filter(t => t.completed).map(t => t.title)
+          // Canvas IDs include both the configured instance and assignment ID.
+          // Titles are not identities: two courses commonly reuse names such as
+          // "Final Project" or "Week 1 Discussion".
+          const completedCanvasIds = new Set(
+            existingTasks
+              .filter(t => t.source === 'canvas' && t.completed)
+              .map(t => t.id)
           )
 
           const mergedCanvasTasks = uniqueCanvasTasks.map(t => ({
             ...t,
-            completed: completedNames.has(t.title)
+            completed: completedCanvasIds.has(t.id)
           }))
 
           set({
