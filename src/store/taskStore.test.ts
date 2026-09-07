@@ -36,7 +36,7 @@ describe('taskStore', () => {
         source: 'manual',
         completed: false,
       })
-      expect(tasks[0].id).toMatch(/^manual-\d+$/)
+      expect(tasks[0].id).toMatch(/^manual-[0-9a-f-]{36}$/)
     })
 
     it('adds a task with due date and custom course', () => {
@@ -50,6 +50,18 @@ describe('taskStore', () => {
         dueDate: '2025-02-15',
         courseName: 'Math',
       })
+    })
+
+    it('keeps IDs unique when tasks are created in the same millisecond', () => {
+      const now = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
+      const { addManualTask } = useTaskStore.getState()
+
+      addManualTask('First task', null)
+      addManualTask('Second task', null)
+
+      const ids = useTaskStore.getState().tasks.map(task => task.id)
+      expect(new Set(ids).size).toBe(2)
+      now.mockRestore()
     })
   })
 

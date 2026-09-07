@@ -103,7 +103,7 @@ export const useTaskStore = create<TaskStore>()(
 
       addManualTask: (title, dueDate, courseName = 'Personal') => set((state) => ({
         tasks: [...state.tasks, {
-          id: `manual-${Date.now()}`,
+          id: `manual-${crypto.randomUUID()}`,
           title,
           dueDate,
           courseName,
