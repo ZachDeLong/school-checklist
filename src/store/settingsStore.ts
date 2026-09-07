@@ -1,35 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { sanitizePersistedSettings, type CanvasInstance, type Theme } from './settingsValidation'
 
-export interface CanvasInstance {
-  id: string
-  name: string
-  url: string
-  token: string
-}
-
-type Theme = 'light' | 'dark'
+export type { CanvasInstance } from './settingsValidation'
 
 const STORAGE_KEY = 'school-checklist-settings'
-
-function getStoredSettings(): { theme: Theme; timeframeDays: number; canvasInstances: CanvasInstance[]; soundEnabled: boolean; confettiEnabled: boolean } {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      return {
-        theme: parsed.state?.theme || 'dark',
-        timeframeDays: parsed.state?.timeframeDays || 7,
-        canvasInstances: parsed.state?.canvasInstances || [],
-        soundEnabled: parsed.state?.soundEnabled ?? true,
-        confettiEnabled: parsed.state?.confettiEnabled ?? true,
-      }
-    }
-  } catch { /* ignore invalid stored settings */ }
-  return { theme: 'dark', timeframeDays: 7, canvasInstances: [], soundEnabled: true, confettiEnabled: true }
-}
-
-const stored = getStoredSettings()
 
 interface SettingsState {
   canvasInstances: CanvasInstance[]
@@ -49,19 +24,16 @@ interface SettingsState {
   setSetupPromptDismissed: (dismissed: boolean) => void
   setMinimalMode: (minimal: boolean) => void
   isConfigured: () => boolean
-  // Legacy getters for backwards compatibility
-  canvasToken: string
-  canvasUrl: string
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
-      canvasInstances: stored.canvasInstances,
-      theme: stored.theme,
-      timeframeDays: stored.timeframeDays,
-      soundEnabled: stored.soundEnabled,
-      confettiEnabled: stored.confettiEnabled,
+      canvasInstances: [],
+      theme: 'dark',
+      timeframeDays: 7,
+      soundEnabled: true,
+      confettiEnabled: true,
       setupPromptDismissed: false,
       minimalMode: false,
 
@@ -110,16 +82,6 @@ export const useSettingsStore = create<SettingsState>()(
         const { canvasInstances } = get()
         return canvasInstances.length > 0 && canvasInstances.some(i => i.url && i.token)
       },
-
-      // Legacy getters - return first instance for backwards compatibility
-      get canvasToken() {
-        const { canvasInstances } = get()
-        return canvasInstances[0]?.token || ''
-      },
-      get canvasUrl() {
-        const { canvasInstances } = get()
-        return canvasInstances[0]?.url || ''
-      },
     }),
     {
       name: STORAGE_KEY,
@@ -132,8 +94,15 @@ export const useSettingsStore = create<SettingsState>()(
         setupPromptDismissed: state.setupPromptDismissed,
         minimalMode: state.minimalMode,
       }),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...sanitizePersistedSettings(persistedState),
+      }),
       onRehydrateStorage: () => {
-        return (state) => {
+        return (state, error) => {
+          if (error) {
+            console.error('Failed to restore saved settings:', error)
+          }
           if (state?.theme) {
             document.documentElement.setAttribute('data-theme', state.theme)
           }
