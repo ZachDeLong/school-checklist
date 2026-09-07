@@ -104,6 +104,33 @@ describe('fetchAssignments', () => {
       ],
     })
   })
+
+  it('reports malformed course records instead of treating them as an empty course list', async () => {
+    server.use(errorHandlers.malformedCourses)
+
+    await expect(fetchAssignments()).resolves.toEqual({
+      assignments: [],
+      failures: [
+        expect.objectContaining({
+          instanceId: 'test-instance',
+          courseId: '123456',
+          message: 'Canvas returned malformed course data',
+        }),
+        expect.objectContaining({
+          instanceId: 'test-instance',
+          message: 'Canvas returned malformed course data',
+        }),
+      ],
+    })
+  })
+
+  it('rejects a non-array course payload instead of treating it as no courses', async () => {
+    server.use(errorHandlers.nonArrayCourses)
+
+    await expect(fetchAssignments()).rejects.toThrow(
+      'Test School: Canvas returned an invalid response shape'
+    )
+  })
 })
 
 describe('rewriteCanvasNextLink', () => {

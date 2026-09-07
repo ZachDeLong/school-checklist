@@ -57,4 +57,15 @@ export const errorHandlers = {
     }
     return HttpResponse.json(mockAssignments.get(String(params.courseId)) ?? [])
   }),
+
+  malformedCourses: http.get('/api/canvas/courses', () => {
+    return HttpResponse.json([
+      { id: 123456 },
+      { unexpected: true },
+    ])
+  }),
+
+  nonArrayCourses: http.get('/api/canvas/courses', () => {
+    return HttpResponse.json({ courses: [] })
+  }),
 }

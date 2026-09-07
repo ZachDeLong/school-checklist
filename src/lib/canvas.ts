@@ -92,7 +92,9 @@ async function fetchAllPages(url: string, headers: Record<string, string>): Prom
     } catch {
       throw new Error('Canvas returned an invalid JSON response')
     }
-    if (!Array.isArray(data)) break
+    if (!Array.isArray(data)) {
+      throw new Error('Canvas returned an invalid response shape')
+    }
     results.push(...data)
 
     const linkHeader = res.headers.get('Link')
@@ -126,15 +128,36 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<InstanceFetc
   // Fetch all active courses with pagination
   const rawCourses = await fetchAllPages('/api/canvas/courses?enrollment_state=active&per_page=100', headers)
 
-  const courses = rawCourses
-    .map((course) => {
-      const parsed = CourseSchema.safeParse(course)
-      return parsed.success ? parsed.data : null
+  const courses: z.infer<typeof CourseSchema>[] = []
+  const failures: CanvasSyncFailure[] = []
+  for (const rawCourse of rawCourses) {
+    const parsed = CourseSchema.safeParse(rawCourse)
+    if (parsed.success) {
+      courses.push(parsed.data)
+      continue
+    }
+
+    const record = typeof rawCourse === 'object' && rawCourse !== null
+      ? rawCourse as Record<string, unknown>
+      : null
+    const rawId = record?.id
+    const courseId = typeof rawId === 'number' && Number.isSafeInteger(rawId)
+      ? String(rawId)
+      : typeof rawId === 'string' && /^\d+$/.test(rawId)
+        ? rawId
+        : undefined
+    const courseName = typeof record?.name === 'string' ? record.name : undefined
+    failures.push({
+      instanceId: instance.id,
+      instanceName: instance.name,
+      ...(courseId ? { courseId } : {}),
+      ...(courseName ? { courseName } : {}),
+      message: 'Canvas returned malformed course data',
     })
-    .filter((c): c is z.infer<typeof CourseSchema> => c !== null)
+  }
 
   if (courses.length === 0) {
-    return { assignments: [], failures: [] }
+    return { assignments: [], failures }
   }
 
   // Fetch assignments from each course in parallel
@@ -163,8 +186,6 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<InstanceFetc
   }
 
   const allAssignments: CanvasAssignment[] = []
-  const failures: CanvasSyncFailure[] = []
-
   courseResults.forEach((result, index) => {
     if (result.status === 'rejected') {
       const course = courses[index]
