@@ -72,10 +72,20 @@ export default async function handler(req) {
       headers['Authorization'] = authHeader
     }
 
-    const canvasRes = await fetch(canvasUrl, {
+    const contentType = req.headers.get('content-type')
+    if (contentType) {
+      headers['Content-Type'] = contentType
+    }
+
+    const fetchOptions = {
       method: req.method,
       headers,
-    })
+    }
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      fetchOptions.body = await req.arrayBuffer()
+    }
+
+    const canvasRes = await fetch(canvasUrl, fetchOptions)
 
     const data = await canvasRes.text()
 
