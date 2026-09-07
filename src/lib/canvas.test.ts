@@ -67,9 +67,22 @@ describe('fetchAssignments', () => {
     await expect(fetchAssignments()).rejects.toThrow('Test School: Canvas API error: 500')
   })
 
-  it('skips courses that return malformed assignment data', async () => {
+  it('throws when every course returns malformed assignment data', async () => {
     server.use(errorHandlers.invalidJson)
 
-    await expect(fetchAssignments()).resolves.toEqual([])
+    await expect(fetchAssignments()).rejects.toThrow(
+      'Test School: Canvas returned an invalid JSON response'
+    )
+  })
+
+  it('keeps successful courses when one course returns malformed data', async () => {
+    server.use(errorHandlers.oneInvalidCourse)
+
+    await expect(fetchAssignments()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'test-instance:1002',
+        course_name: 'Calculus I',
+      }),
+    ])
   })
 })

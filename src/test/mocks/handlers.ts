@@ -40,4 +40,13 @@ export const errorHandlers = {
       headers: { 'Content-Type': 'application/json' },
     })
   }),
+
+  oneInvalidCourse: http.get('/api/canvas/courses/:courseId/assignments', ({ params }) => {
+    if (String(params.courseId) === '123456') {
+      return new HttpResponse('not valid json', {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    return HttpResponse.json(mockAssignments.get(String(params.courseId)) ?? [])
+  }),
 }

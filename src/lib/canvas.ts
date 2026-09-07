@@ -44,7 +44,12 @@ async function fetchAllPages(url: string, headers: Record<string, string>): Prom
       throw new Error(`Canvas API error: ${res.status}`)
     }
 
-    const data: unknown = await res.json()
+    let data: unknown
+    try {
+      data = await res.json()
+    } catch {
+      throw new Error('Canvas returned an invalid JSON response')
+    }
     if (!Array.isArray(data)) break
     results.push(...data)
 
@@ -101,11 +106,24 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
     })
   )
 
+  const successfulCourseRequests = courseResults.filter(
+    (result): result is PromiseFulfilledResult<{
+      course: z.infer<typeof CourseSchema>
+      assignments: unknown[]
+    }> => result.status === 'fulfilled'
+  )
+
+  if (successfulCourseRequests.length === 0) {
+    const firstFailure = courseResults.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    )
+    if (firstFailure?.reason instanceof Error) throw firstFailure.reason
+    throw new Error('Failed to fetch assignments from Canvas')
+  }
+
   const allAssignments: CanvasAssignment[] = []
 
-  for (const result of courseResults) {
-    if (result.status !== 'fulfilled') continue
-
+  for (const result of successfulCourseRequests) {
     const { course, assignments } = result.value
 
     for (const raw of assignments) {
