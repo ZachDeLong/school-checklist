@@ -5,24 +5,10 @@ const mockCourses = [
   { id: 789012, name: 'Calculus I' },
 ]
 
-const mockCalendarEvents = [
-  {
-    id: '1001',
-    title: 'Homework 1',
-    all_day_date: '2025-02-10',
-    start_at: null,
-    end_at: null,
-    context_name: 'Intro to Computer Science',
-  },
-  {
-    id: '1002',
-    title: 'Quiz 2',
-    all_day_date: null,
-    start_at: '2025-02-15T10:00:00Z',
-    end_at: '2025-02-15T11:00:00Z',
-    context_name: 'Calculus I',
-  },
-]
+const mockAssignments = new Map([
+  ['123456', [{ id: 1001, name: 'Homework 1', due_at: '2025-02-10T23:59:59Z' }]],
+  ['789012', [{ id: 1002, name: 'Quiz 2', due_at: '2025-02-15T11:00:00Z' }]],
+])
 
 export const handlers = [
   http.get('/api/canvas/courses', ({ request }) => {
@@ -35,8 +21,8 @@ export const handlers = [
     return HttpResponse.json([])
   }),
 
-  http.get('/api/canvas/calendar_events', () => {
-    return HttpResponse.json(mockCalendarEvents)
+  http.get('/api/canvas/courses/:courseId/assignments', ({ params }) => {
+    return HttpResponse.json(mockAssignments.get(String(params.courseId)) ?? [])
   }),
 ]
 
@@ -49,7 +35,7 @@ export const errorHandlers = {
     return new HttpResponse(null, { status: 500 })
   }),
 
-  invalidJson: http.get('/api/canvas/calendar_events', () => {
+  invalidJson: http.get('/api/canvas/courses/:courseId/assignments', () => {
     return new HttpResponse('not valid json', {
       headers: { 'Content-Type': 'application/json' },
     })

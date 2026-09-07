@@ -2,6 +2,27 @@ export const config = {
   runtime: 'edge',
 }
 
+const HOSTNAME_PATTERN = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/
+
+function configuredCanvasHosts() {
+  const value = globalThis.process?.env?.CANVAS_ALLOWED_HOSTS ?? ''
+  return value.split(',').map((host) => host.trim()).filter(Boolean)
+}
+
+/**
+ * Accept Canvas-owned hosts by default and exact, deployment-configured custom
+ * domains. The header must contain only a DNS hostname, never a URL or port.
+ */
+export function normalizeCanvasHost(rawHost, additionalHosts = configuredCanvasHosts()) {
+  const hostname = rawHost?.trim().toLowerCase()
+  if (!hostname || !HOSTNAME_PATTERN.test(hostname)) return null
+
+  const isInstructureHost = hostname === 'instructure.com' || hostname.endsWith('.instructure.com')
+  const isConfiguredHost = additionalHosts.some((host) => host.trim().toLowerCase() === hostname)
+
+  return isInstructureHost || isConfiguredHost ? hostname : null
+}
+
 export default async function handler(req) {
   const url = new URL(req.url)
 
@@ -18,16 +39,17 @@ export default async function handler(req) {
   }
 
   // Get the Canvas domain from header
-  const canvasHost = req.headers.get('x-canvas-host')
-  if (!canvasHost) {
+  const rawCanvasHost = req.headers.get('x-canvas-host')
+  if (!rawCanvasHost) {
     return new Response(JSON.stringify({ error: 'Missing X-Canvas-Host header' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     })
   }
 
-  // Validate the host
-  if (!canvasHost.includes('instructure.com') && !canvasHost.includes('canvas')) {
+  // Validate and normalize before using user-controlled input in an outbound URL.
+  const canvasHost = normalizeCanvasHost(rawCanvasHost)
+  if (!canvasHost) {
     return new Response(JSON.stringify({ error: 'Invalid Canvas host' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },

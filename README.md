@@ -66,6 +66,8 @@ npm run dev
 
 Note: Canvas sync won't work locally without the Vercel Edge Function. For local testing, deploy to Vercel first.
 
+The proxy accepts `*.instructure.com` hosts by default. To support a school's custom Canvas domain, set `CANVAS_ALLOWED_HOSTS` to a comma-separated list of exact hostnames in the Vercel deployment.
+
 ### Deploy to Vercel
 
 1. Fork this repo

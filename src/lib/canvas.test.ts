@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { server } from '../test/mocks/server'
 import { errorHandlers } from '../test/mocks/handlers'
 import { fetchAssignments } from './canvas'
@@ -6,6 +6,9 @@ import { useSettingsStore } from '../store/settingsStore'
 
 describe('fetchAssignments', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2025-02-01T12:00:00Z'))
+
     // Set up mock settings before each test
     useSettingsStore.setState({
       canvasInstances: [{
@@ -14,10 +17,15 @@ describe('fetchAssignments', () => {
         token: 'test-token',
         url: 'test.instructure.com',
       }],
+      timeframeDays: 30,
     })
   })
 
-  it('fetches and transforms calendar events into assignments', async () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('fetches and transforms per-course assignments', async () => {
     const assignments = await fetchAssignments()
 
     expect(assignments).toHaveLength(2)
@@ -50,18 +58,18 @@ describe('fetchAssignments', () => {
   it('throws error on 401 unauthorized', async () => {
     server.use(errorHandlers.unauthorized)
 
-    await expect(fetchAssignments()).rejects.toThrow('Invalid token for Test School')
+    await expect(fetchAssignments()).rejects.toThrow('Test School: Invalid Canvas token')
   })
 
   it('throws error on server errors', async () => {
     server.use(errorHandlers.serverError)
 
-    await expect(fetchAssignments()).rejects.toThrow('Canvas API error 500')
+    await expect(fetchAssignments()).rejects.toThrow('Test School: Canvas API error: 500')
   })
 
-  it('throws error on invalid JSON response', async () => {
+  it('skips courses that return malformed assignment data', async () => {
     server.use(errorHandlers.invalidJson)
 
-    await expect(fetchAssignments()).rejects.toThrow('Failed to parse calendar events')
+    await expect(fetchAssignments()).resolves.toEqual([])
   })
 })
