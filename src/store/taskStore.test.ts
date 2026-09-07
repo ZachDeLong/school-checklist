@@ -121,9 +121,10 @@ describe('taskStore', () => {
           },
         ],
       })
-      vi.mocked(fetchAssignments).mockResolvedValue([
-        {
+      vi.mocked(fetchAssignments).mockResolvedValue({
+        assignments: [{
           id: 'school-a:101',
+          instance_id: 'school-a',
           name: 'Renamed Final Project',
           due_at: '2025-02-12T12:00:00Z',
           course_id: '1',
@@ -131,12 +132,14 @@ describe('taskStore', () => {
         },
         {
           id: 'school-a:202',
+          instance_id: 'school-a',
           name: 'Final Project',
           due_at: '2025-02-13T12:00:00Z',
           course_id: '2',
           course_name: 'Course B',
-        },
-      ])
+        }],
+        failures: [],
+      })
 
       await useTaskStore.getState().syncCanvas(true)
 
@@ -152,6 +155,67 @@ describe('taskStore', () => {
           completed: false,
         }),
       ])
+    })
+
+    it('retains saved tasks only for Canvas courses that failed to refresh', async () => {
+      useTaskStore.setState({
+        tasks: [
+          {
+            id: 'canvas-school-a:101',
+            title: 'Saved Course A task',
+            dueDate: '2025-02-10T12:00:00Z',
+            courseName: 'Course A',
+            source: 'canvas',
+            completed: true,
+            canvasInstanceId: 'school-a',
+            canvasCourseId: '1',
+          },
+          {
+            id: 'canvas-school-a:202',
+            title: 'Stale Course B task',
+            dueDate: '2025-02-11T12:00:00Z',
+            courseName: 'Course B',
+            source: 'canvas',
+            completed: false,
+            canvasInstanceId: 'school-a',
+            canvasCourseId: '2',
+          },
+          {
+            id: 'manual-1',
+            title: 'Personal task',
+            dueDate: null,
+            courseName: 'Personal',
+            source: 'manual',
+            completed: false,
+          },
+        ],
+      })
+      vi.mocked(fetchAssignments).mockResolvedValue({
+        assignments: [{
+          id: 'school-a:303',
+          instance_id: 'school-a',
+          name: 'Fresh Course B task',
+          due_at: '2025-02-13T12:00:00Z',
+          course_id: '2',
+          course_name: 'Course B',
+        }],
+        failures: [{
+          instanceId: 'school-a',
+          instanceName: 'School A',
+          courseId: '1',
+          courseName: 'Course A',
+          message: 'Canvas API error: 503',
+        }],
+      })
+
+      await useTaskStore.getState().syncCanvas(true)
+
+      expect(useTaskStore.getState().tasks).toEqual([
+        expect.objectContaining({ id: 'canvas-school-a:303', title: 'Fresh Course B task' }),
+        expect.objectContaining({ id: 'canvas-school-a:101', title: 'Saved Course A task', completed: true }),
+        expect.objectContaining({ id: 'manual-1', title: 'Personal task' }),
+      ])
+      expect(useTaskStore.getState().error).toMatch(/previously saved assignments/)
     })
   })
 

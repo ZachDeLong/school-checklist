@@ -7,6 +7,8 @@ const TaskSchema = z.object({
   courseName: z.string(),
   source: z.enum(['canvas', 'manual']),
   completed: z.boolean(),
+  canvasInstanceId: z.string().optional(),
+  canvasCourseId: z.string().optional(),
 })
 
 export type Task = z.infer<typeof TaskSchema>

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { fetchAssignments, type CanvasAssignment } from '../lib/canvas'
+import { fetchAssignments, type CanvasAssignment, type CanvasSyncFailure } from '../lib/canvas'
 import type { Task } from '../schemas/task'
 
 export type { Task }
@@ -53,8 +53,8 @@ export const useTaskStore = create<TaskStore>()(
         set({ syncing: true, error: null })
 
         try {
-          const assignments = await fetchAssignments()
-          const canvasTasks = assignments.map(transformToTask)
+          const syncResult = await fetchAssignments()
+          const canvasTasks = syncResult.assignments.map(transformToTask)
 
           // Dedupe canvas tasks by ID
           const seenIds = new Set<string>()
@@ -67,6 +67,9 @@ export const useTaskStore = create<TaskStore>()(
           // Merge: keep manual tasks + completion state, update canvas tasks
           const { tasks: existingTasks } = get()
           const manualTasks = existingTasks.filter(t => t.source === 'manual')
+          const staleTasksFromFailures = existingTasks.filter(
+            task => task.source === 'canvas' && syncResult.failures.some(failure => taskMatchesFailure(task, failure))
+          )
 
           // Canvas IDs include both the configured instance and assignment ID.
           // Titles are not identities: two courses commonly reuse names such as
@@ -81,11 +84,16 @@ export const useTaskStore = create<TaskStore>()(
             ...t,
             completed: completedCanvasIds.has(t.id)
           }))
+          const refreshedIds = new Set(mergedCanvasTasks.map(task => task.id))
+          const retainedStaleTasks = staleTasksFromFailures.filter(task => !refreshedIds.has(task.id))
 
           set({
-            tasks: [...mergedCanvasTasks, ...manualTasks],
+            tasks: [...mergedCanvasTasks, ...retainedStaleTasks, ...manualTasks],
             lastFetched: Date.now(),
             syncing: false,
+            error: syncResult.failures.length > 0
+              ? 'Some Canvas courses could not be refreshed. Showing their previously saved assignments.'
+              : null,
           })
         } catch (err) {
           set({
@@ -229,5 +237,18 @@ function transformToTask(assignment: CanvasAssignment): Task {
     courseName: assignment.course_name,
     source: 'canvas',
     completed: false,
+    canvasInstanceId: assignment.instance_id,
+    canvasCourseId: assignment.course_id,
   }
+}
+
+function taskMatchesFailure(task: Task, failure: CanvasSyncFailure): boolean {
+  const legacyInstanceId = task.id.startsWith('canvas-')
+    ? task.id.slice('canvas-'.length).split(':')[0]
+    : undefined
+  const instanceId = task.canvasInstanceId ?? legacyInstanceId
+  if (instanceId !== failure.instanceId) return false
+  if (!failure.courseId) return true
+  if (task.canvasCourseId) return task.canvasCourseId === failure.courseId
+  return task.courseName === failure.courseName
 }

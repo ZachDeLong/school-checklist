@@ -15,10 +15,29 @@ const AssignmentSchema = z.object({
 
 export interface CanvasAssignment {
   id: string
+  instance_id: string
   name: string
   due_at: string | null
   course_id: string
   course_name: string
+}
+
+export interface CanvasSyncFailure {
+  instanceId: string
+  instanceName: string
+  courseId?: string
+  courseName?: string
+  message: string
+}
+
+export interface CanvasSyncResult {
+  assignments: CanvasAssignment[]
+  failures: CanvasSyncFailure[]
+}
+
+interface InstanceFetchResult {
+  assignments: CanvasAssignment[]
+  failures: CanvasSyncFailure[]
 }
 
 /**
@@ -91,7 +110,7 @@ async function fetchAllPages(url: string, headers: Record<string, string>): Prom
 /**
  * Fetch assignments from a single Canvas instance
  */
-async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssignment[]> {
+async function fetchFromInstance(instance: CanvasInstance): Promise<InstanceFetchResult> {
   const headers: Record<string, string> = {
     'Authorization': `Bearer ${instance.token}`,
     'X-Canvas-Host': instance.url,
@@ -115,7 +134,7 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
     .filter((c): c is z.infer<typeof CourseSchema> => c !== null)
 
   if (courses.length === 0) {
-    return []
+    return { assignments: [], failures: [] }
   }
 
   // Fetch assignments from each course in parallel
@@ -144,6 +163,20 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
   }
 
   const allAssignments: CanvasAssignment[] = []
+  const failures: CanvasSyncFailure[] = []
+
+  courseResults.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      const course = courses[index]
+      failures.push({
+        instanceId: instance.id,
+        instanceName: instance.name,
+        courseId: String(course.id),
+        courseName: course.name,
+        message: result.reason instanceof Error ? result.reason.message : 'Failed to fetch course assignments',
+      })
+    }
+  })
 
   for (const result of successfulCourseRequests) {
     const { course, assignments } = result.value
@@ -161,6 +194,7 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
 
       allAssignments.push({
         id: `${instance.id}:${assignment.id}`,
+        instance_id: instance.id,
         name: assignment.name,
         due_at: assignment.due_at,
         course_id: String(course.id),
@@ -169,13 +203,13 @@ async function fetchFromInstance(instance: CanvasInstance): Promise<CanvasAssign
     }
   }
 
-  return allAssignments
+  return { assignments: allAssignments, failures }
 }
 
 /**
  * Fetch assignments from all configured Canvas instances
  */
-export async function fetchAssignments(): Promise<CanvasAssignment[]> {
+export async function fetchAssignments(): Promise<CanvasSyncResult> {
   const { canvasInstances } = useSettingsStore.getState()
 
   const validInstances = canvasInstances.filter(i => i.url && i.token)
@@ -191,25 +225,33 @@ export async function fetchAssignments(): Promise<CanvasAssignment[]> {
 
   // Collect all assignments and errors
   const allAssignments: CanvasAssignment[] = []
-  const errors: string[] = []
+  const failures: CanvasSyncFailure[] = []
+  let successfulInstances = 0
 
   results.forEach((result, index) => {
     if (result.status === 'fulfilled') {
-      allAssignments.push(...result.value)
+      successfulInstances++
+      allAssignments.push(...result.value.assignments)
+      failures.push(...result.value.failures)
     } else {
-      errors.push(`${validInstances[index].name}: ${result.reason.message}`)
+      const instance = validInstances[index]
+      failures.push({
+        instanceId: instance.id,
+        instanceName: instance.name,
+        message: result.reason instanceof Error ? result.reason.message : 'Failed to fetch Canvas instance',
+      })
     }
   })
 
   // If all instances failed, throw an error
-  if (allAssignments.length === 0 && errors.length > 0) {
-    throw new Error(errors.join('; '))
+  if (successfulInstances === 0 && failures.length > 0) {
+    throw new Error(failures.map(failure => `${failure.instanceName}: ${failure.message}`).join('; '))
   }
 
   // Log warnings for partial failures but still return results
-  if (errors.length > 0) {
-    console.warn('Some Canvas instances failed:', errors)
+  if (failures.length > 0) {
+    console.warn('Some Canvas requests failed:', failures)
   }
 
-  return allAssignments
+  return { assignments: allAssignments, failures }
 }

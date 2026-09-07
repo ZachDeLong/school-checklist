@@ -26,11 +26,13 @@ describe('fetchAssignments', () => {
   })
 
   it('fetches and transforms per-course assignments', async () => {
-    const assignments = await fetchAssignments()
+    const { assignments, failures } = await fetchAssignments()
 
     expect(assignments).toHaveLength(2)
+    expect(failures).toEqual([])
     expect(assignments[0]).toMatchObject({
       id: 'test-instance:1001',
+      instance_id: 'test-instance',
       name: 'Homework 1',
       course_name: 'Intro to Computer Science',
     })
@@ -42,14 +44,14 @@ describe('fetchAssignments', () => {
   })
 
   it('handles all_day_date by converting to ISO format', async () => {
-    const assignments = await fetchAssignments()
+    const { assignments } = await fetchAssignments()
 
     // all_day_date should be converted to ISO format with T23:59:59Z
     expect(assignments[0].due_at).toBe('2025-02-10T23:59:59Z')
   })
 
   it('uses start_at/end_at when all_day_date is null', async () => {
-    const assignments = await fetchAssignments()
+    const { assignments } = await fetchAssignments()
 
     // Should use end_at when all_day_date is null
     expect(assignments[1].due_at).toBe('2025-02-15T11:00:00Z')
@@ -83,15 +85,24 @@ describe('fetchAssignments', () => {
     )
   })
 
-  it('keeps successful courses when one course returns malformed data', async () => {
+  it('reports a failed course while keeping successful assignments', async () => {
     server.use(errorHandlers.oneInvalidCourse)
 
-    await expect(fetchAssignments()).resolves.toEqual([
-      expect.objectContaining({
-        id: 'test-instance:1002',
-        course_name: 'Calculus I',
-      }),
-    ])
+    await expect(fetchAssignments()).resolves.toEqual({
+      assignments: [
+        expect.objectContaining({
+          id: 'test-instance:1002',
+          course_name: 'Calculus I',
+        }),
+      ],
+      failures: [
+        expect.objectContaining({
+          instanceId: 'test-instance',
+          courseId: '123456',
+          courseName: 'Intro to Computer Science',
+        }),
+      ],
+    })
   })
 })
 
