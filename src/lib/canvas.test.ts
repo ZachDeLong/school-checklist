@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { server } from '../test/mocks/server'
 import { errorHandlers } from '../test/mocks/handlers'
-import { fetchAssignments } from './canvas'
+import { fetchAssignments, rewriteCanvasNextLink } from './canvas'
 import { useSettingsStore } from '../store/settingsStore'
 
 describe('fetchAssignments', () => {
@@ -67,6 +67,14 @@ describe('fetchAssignments', () => {
     await expect(fetchAssignments()).rejects.toThrow('Test School: Canvas API error: 500')
   })
 
+  it('rejects an unsafe pagination link before following it', async () => {
+    server.use(errorHandlers.invalidPaginationLink)
+
+    await expect(fetchAssignments()).rejects.toThrow(
+      'Test School: Canvas returned an invalid pagination link'
+    )
+  })
+
   it('throws when every course returns malformed assignment data', async () => {
     server.use(errorHandlers.invalidJson)
 
@@ -84,5 +92,32 @@ describe('fetchAssignments', () => {
         course_name: 'Calculus I',
       }),
     ])
+  })
+})
+
+describe('rewriteCanvasNextLink', () => {
+  it('rewrites absolute and root-relative Canvas API links through the proxy', () => {
+    expect(rewriteCanvasNextLink(
+      'https://school.instructure.com/api/v1/courses?page=2&per_page=100'
+    )).toBe('/api/canvas/courses?page=2&per_page=100')
+    expect(rewriteCanvasNextLink('/api/v1/courses?page=3')).toBe(
+      '/api/canvas/courses?page=3'
+    )
+  })
+
+  it('strips an unexpected upstream host instead of sending it the Canvas token', () => {
+    expect(rewriteCanvasNextLink(
+      'https://attacker.example/api/v1/courses?page=2'
+    )).toBe('/api/canvas/courses?page=2')
+  })
+
+  it.each([
+    'https://attacker.example/collect?page=2',
+    'javascript:alert(1)',
+    '/not-the-canvas-api?page=2',
+  ])('rejects pagination links outside the Canvas API: %s', (link) => {
+    expect(() => rewriteCanvasNextLink(link)).toThrow(
+      'Canvas returned an invalid pagination link'
+    )
   })
 })

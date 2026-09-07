@@ -31,6 +31,29 @@ function parseNextLink(linkHeader: string | null): string | null {
 }
 
 /**
+ * Convert Canvas pagination URLs back into a same-origin proxy request.
+ * Never return an upstream URL because the caller attaches the Canvas token.
+ */
+export function rewriteCanvasNextLink(nextLink: string): string {
+  let parsed: URL
+  try {
+    parsed = new URL(nextLink, 'https://canvas.invalid')
+  } catch {
+    throw new Error('Canvas returned an invalid pagination link')
+  }
+
+  if (
+    (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') ||
+    (parsed.pathname !== '/api/v1' && !parsed.pathname.startsWith('/api/v1/'))
+  ) {
+    throw new Error('Canvas returned an invalid pagination link')
+  }
+
+  const apiPath = parsed.pathname.slice('/api/v1'.length) || '/'
+  return `/api/canvas${apiPath}${parsed.search}`
+}
+
+/**
  * Fetch all pages from a paginated Canvas API endpoint.
  */
 async function fetchAllPages(url: string, headers: Record<string, string>): Promise<unknown[]> {
@@ -56,8 +79,7 @@ async function fetchAllPages(url: string, headers: Record<string, string>): Prom
     const linkHeader = res.headers.get('Link')
     const nextLink = parseNextLink(linkHeader)
     if (nextLink) {
-      // Canvas returns absolute URLs; rewrite to go through our proxy
-      nextUrl = nextLink.replace(/^https?:\/\/[^/]+\/api\/v1/, '/api/canvas')
+      nextUrl = rewriteCanvasNextLink(nextLink)
     } else {
       nextUrl = null
     }

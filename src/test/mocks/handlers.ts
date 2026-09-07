@@ -35,6 +35,14 @@ export const errorHandlers = {
     return new HttpResponse(null, { status: 500 })
   }),
 
+  invalidPaginationLink: http.get('/api/canvas/courses', () => {
+    return HttpResponse.json(mockCourses, {
+      headers: {
+        Link: '<https://attacker.example/collect?page=2>; rel="next"',
+      },
+    })
+  }),
+
   invalidJson: http.get('/api/canvas/courses/:courseId/assignments', () => {
     return new HttpResponse('not valid json', {
       headers: { 'Content-Type': 'application/json' },
